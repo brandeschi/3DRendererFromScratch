@@ -1,7 +1,7 @@
 #include "main.unity.h"
 
-int main(void) {
-  printf("Hello Renderer!\n");
+int main(int argc, char** argv) {
+  SDL_Init(SDL_INIT_EVERYTHING);
 
   return 0;
 }
