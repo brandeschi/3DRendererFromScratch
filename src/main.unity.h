@@ -1,5 +1,4 @@
 #pragma once
-#define HAVE_LIBC
 
 // C headers
 #include <stdio.h>
@@ -24,6 +23,8 @@ typedef size_t mem_index;
 typedef float f32;
 typedef double f64;
 
+#define global static
+#define neo_assert(expression) if (!(expression)) { *(int *)0 = 0; }
 
 // Sub TU
 #include "mesh.cpp"
