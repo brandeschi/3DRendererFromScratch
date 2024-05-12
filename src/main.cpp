@@ -1,14 +1,35 @@
 #include "main.unity.h"
 
-#define WIN_WIDTH 1200
-#define WIN_HEIGHT 900
 global b32 app_running = false;
+global u32 WIN_WIDTH = 1200;
+global u32 WIN_HEIGHT = 900;
+
+static void draw_rect(u32 *color_buffer, u32 x, u32 y, u32 w, u32 h, u32 color) {
+  neo_assert(x + w <= WIN_WIDTH);
+  neo_assert(y + h <= WIN_HEIGHT);
+
+  for (u32 rect_row = y; rect_row < h; ++rect_row) {
+    for (u32 rect_col = x; rect_col < w; ++rect_col) {
+      color_buffer[(w*rect_row) + rect_col] = color;
+    }
+  }
+}
 
 int main(int argc, char** argv) {
   if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
     fprintf(stderr, "Error initing SDL2\n");
     return -1;
   }
+
+#if 0
+  SDL_DisplayMode display_mode;
+  if (SDL_GetCurrentDisplayMode(0, &display_mode) != 0) {
+    fprintf(stderr, "Error getting display\n");
+    return -1;
+  }
+  WIN_WIDTH = display_mode.w;
+  WIN_HEIGHT = display_mode.h;
+#endif
 
   SDL_Window *window = SDL_CreateWindow("3D Renderer From Scratch",
                                         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
@@ -24,6 +45,8 @@ int main(int argc, char** argv) {
     fprintf(stderr, "Error creating SDL2 renderer\n");
     return -1;
   }
+  // NOTE: Turning this off due to screen flash switching display mode to full screen everytime
+  // SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
 
   // SETUP
   u32 *color_buff = (u32 *)malloc(sizeof(u32)*WIN_WIDTH*WIN_HEIGHT);
@@ -61,7 +84,11 @@ int main(int argc, char** argv) {
 
     for (u32 y = 0; y < WIN_HEIGHT; ++y) {
       for (u32 x = 0; x < WIN_WIDTH; ++x) {
-        color_buff[(WIN_WIDTH * y) + x] = 0xFF616E8B;
+        if ((y != 0 && x != 0) && (y % 10 == 0 && x % 10 == 0)) {
+          color_buff[(WIN_WIDTH * y) + x] = 0xFFA0A8B9;
+        } else {
+          color_buff[(WIN_WIDTH * y) + x] = 0xFF616E8B;
+        }
       }
     }
     SDL_RenderPresent(renderer);
