@@ -27,5 +27,6 @@ typedef double f64;
 #define neo_assert(expression) if (!(expression)) { *(int *)0 = 0; }
 
 // Sub TU
+#include "math.cpp"
 #include "mesh.cpp"
 

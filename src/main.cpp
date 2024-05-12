@@ -1,16 +1,18 @@
 #include "main.unity.h"
 
-global b32 app_running = false;
-global u32 WIN_WIDTH = 1200;
-global u32 WIN_HEIGHT = 900;
+global b32 AppRunning = false;
+global const u32 WIN_WIDTH = 1200;
+global const u32 WIN_HEIGHT = 900;
+global const u32 CUBE_DIMS = 9*9*9;
+global const f32 FOV_FACTOR = 128.0f;
 
-static void draw_rect(u32 *color_buffer, u32 x, u32 y, u32 w, u32 h, u32 color) {
-  neo_assert(x + w <= WIN_WIDTH);
-  neo_assert(y + h <= WIN_HEIGHT);
+static void DrawRect(u32 *ColorBuffer, u32 x, u32 y, u32 w, u32 h, u32 Color) {
+  neo_assert(x >= 0 && x + w <= WIN_WIDTH);
+  neo_assert(y >= 0 && y + h <= WIN_HEIGHT);
 
-  for (u32 rect_row = y; rect_row < (y + h); ++rect_row) {
-    for (u32 rect_col = x; rect_col < (x + w); ++rect_col) {
-      color_buffer[(rect_row*WIN_WIDTH) + rect_col] = color;
+  for (u32 RectRow = y; RectRow < (y + h); ++RectRow) {
+    for (u32 RectCol = x; RectCol < (x + w); ++RectCol) {
+      ColorBuffer[(RectRow*WIN_WIDTH) + RectCol] = Color;
     }
   }
 }
@@ -31,17 +33,17 @@ int main(int argc, char** argv) {
   WIN_HEIGHT = display_mode.h;
 #endif
 
-  SDL_Window *window = SDL_CreateWindow("3D Renderer From Scratch",
+  SDL_Window *Window = SDL_CreateWindow("3D Renderer From Scratch",
                                         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                         WIN_WIDTH, WIN_HEIGHT,
                                         0);
-  if (!window) {
+  if (!Window) {
     fprintf(stderr, "Error creating SDL2 window\n");
     return -1;
   }
 
-  SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
-  if (!renderer) {
+  SDL_Renderer *Renderer = SDL_CreateRenderer(Window, -1, 0);
+  if (!Renderer) {
     fprintf(stderr, "Error creating SDL2 renderer\n");
     return -1;
   }
@@ -49,26 +51,44 @@ int main(int argc, char** argv) {
   // SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
 
   // SETUP
-  u32 *color_buff = (u32 *)malloc(sizeof(u32)*WIN_WIDTH*WIN_HEIGHT);
-  if (!color_buff) {
+  u32 *ColorBuff = (u32 *)malloc(sizeof(u32)*WIN_WIDTH*WIN_HEIGHT);
+  if (!ColorBuff) {
     fprintf(stderr, "Error allocating with malloc\n");
     return -1;
   }
-  SDL_Texture *cb_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIN_WIDTH, WIN_HEIGHT);
+  SDL_Texture *CBTexture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIN_WIDTH, WIN_HEIGHT);
 
-  app_running = true;
-  while (app_running) {
+  // 9x9x9 Cube
+  u32 PointCount = 0;
+  v3 CubePoints[CUBE_DIMS];
+  for (f32 x = -1.0f; x <= 1.0f; x += 0.25f) {
+    for (f32 y = -1.0f; y <= 1.0f; y += 0.25f) {
+      for (f32 z = -1.0f; z <= 1.0f; z += 0.25f) {
+        v3 CubePoint = { x, y, z };
+        CubePoints[PointCount++] = CubePoint;
+      }
+    }
+  }
+
+  v2 ProjectedPoints[CUBE_DIMS];
+  // 'project' 3D points to 2D
+  for (u32 i = 0; i < CUBE_DIMS; ++i) {
+    ProjectedPoints[i] = { (CubePoints[i].x*FOV_FACTOR), (CubePoints[i].y*FOV_FACTOR) };
+  }
+
+  AppRunning = true;
+  while (AppRunning) {
     // INPUT
-    SDL_Event event;
-    SDL_PollEvent(&event);
+    SDL_Event Event;
+    SDL_PollEvent(&Event);
 
-    switch (event.type) {
+    switch (Event.type) {
       case SDL_QUIT: {
-        app_running = false;
+        AppRunning = false;
       } break;
       case SDL_KEYDOWN: {
-        if(event.key.keysym.sym == SDLK_ESCAPE) {
-          app_running = false;
+        if(Event.key.keysym.sym == SDLK_ESCAPE) {
+          AppRunning = false;
         }
       } break;
     }
@@ -76,13 +96,11 @@ int main(int argc, char** argv) {
     // UPDATE
 
     // RENDER
-    // SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    // SDL_RenderClear(renderer);
 
     // Clear
     for (u32 y = 0; y < WIN_HEIGHT; ++y) {
       for (u32 x = 0; x < WIN_WIDTH; ++x) {
-          color_buff[(WIN_WIDTH * y) + x] = 0xFF616E8B;
+          ColorBuff[(WIN_WIDTH * y) + x] = 0xFF616E8B;
       }
     }
     // Dot Matrix
@@ -91,16 +109,17 @@ int main(int argc, char** argv) {
         if (y == 0 || x == 0) {
           continue;
         }
-          color_buff[(WIN_WIDTH * y) + x] = 0xFFA0A8B9;
+          ColorBuff[(WIN_WIDTH * y) + x] = 0xFFA0A8B9;
       }
     }
 
-    draw_rect(color_buff, (WIN_WIDTH / 2) - (100 / 2), (WIN_HEIGHT / 2) - (100 / 2), 100, 100, 0xFFFF0000);
+    for (u32 i = 0; i < CUBE_DIMS; ++i) {
+      DrawRect(ColorBuff, (u32)(ProjectedPoints[i].x + (f32)(WIN_WIDTH / 2)), (u32)(ProjectedPoints[i].y + (f32)(WIN_HEIGHT / 2)), 5, 5, 0xFF00FF00);
+    }
 
-    SDL_UpdateTexture(cb_texture, 0, color_buff, (int)(WIN_WIDTH*sizeof(u32)));
-    SDL_RenderCopy(renderer, cb_texture, 0, 0);
-
-    SDL_RenderPresent(renderer);
+    SDL_UpdateTexture(CBTexture, 0, ColorBuff, (int)(WIN_WIDTH*sizeof(u32)));
+    SDL_RenderCopy(Renderer, CBTexture, 0, 0);
+    SDL_RenderPresent(Renderer);
   }
 
   return 0;

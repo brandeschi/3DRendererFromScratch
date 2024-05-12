@@ -1,0 +1,35 @@
+// Math types
+union v2
+{
+  struct
+  {
+    f32 x, y;
+  };
+  f32 e[2];
+};
+
+union v3
+{
+  struct
+  {
+    f32 x, y, z;
+  };
+  struct
+  {
+    f32 r, g, b;
+  };
+  f32 e[3];
+};
+
+union v4
+{
+  struct
+  {
+    f32 x, y, z, w;
+  };
+  struct
+  {
+    f32 r, g, b, a;
+  };
+  f32 e[4];
+};
