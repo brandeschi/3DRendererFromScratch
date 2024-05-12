@@ -78,13 +78,25 @@ int main(int argc, char** argv) {
     // RENDER
     // SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     // SDL_RenderClear(renderer);
+
+    // Clear
     for (u32 y = 0; y < WIN_HEIGHT; ++y) {
       for (u32 x = 0; x < WIN_WIDTH; ++x) {
           color_buff[(WIN_WIDTH * y) + x] = 0xFF616E8B;
       }
     }
+    // Dot Matrix
+    for (u32 y = 0; y < WIN_HEIGHT; y += 10) {
+      for (u32 x = 0; x < WIN_WIDTH; x += 10) {
+        if (y == 0 || x == 0) {
+          continue;
+        }
+          color_buff[(WIN_WIDTH * y) + x] = 0xFFA0A8B9;
+      }
+    }
 
     draw_rect(color_buff, (WIN_WIDTH / 2) - (100 / 2), (WIN_HEIGHT / 2) - (100 / 2), 100, 100, 0xFFFF0000);
+
     SDL_UpdateTexture(cb_texture, 0, color_buff, (int)(WIN_WIDTH*sizeof(u32)));
     SDL_RenderCopy(renderer, cb_texture, 0, 0);
 
