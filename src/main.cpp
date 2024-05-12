@@ -8,9 +8,9 @@ static void draw_rect(u32 *color_buffer, u32 x, u32 y, u32 w, u32 h, u32 color) 
   neo_assert(x + w <= WIN_WIDTH);
   neo_assert(y + h <= WIN_HEIGHT);
 
-  for (u32 rect_row = y; rect_row < h; ++rect_row) {
-    for (u32 rect_col = x; rect_col < w; ++rect_col) {
-      color_buffer[(w*rect_row) + rect_col] = color;
+  for (u32 rect_row = y; rect_row < (y + h); ++rect_row) {
+    for (u32 rect_col = x; rect_col < (x + w); ++rect_col) {
+      color_buffer[(rect_row*WIN_WIDTH) + rect_col] = color;
     }
   }
 }
@@ -76,21 +76,18 @@ int main(int argc, char** argv) {
     // UPDATE
 
     // RENDER
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderClear(renderer);
+    // SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    // SDL_RenderClear(renderer);
+    for (u32 y = 0; y < WIN_HEIGHT; ++y) {
+      for (u32 x = 0; x < WIN_WIDTH; ++x) {
+          color_buff[(WIN_WIDTH * y) + x] = 0xFF616E8B;
+      }
+    }
 
+    draw_rect(color_buff, (WIN_WIDTH / 2) - (100 / 2), (WIN_HEIGHT / 2) - (100 / 2), 100, 100, 0xFFFF0000);
     SDL_UpdateTexture(cb_texture, 0, color_buff, (int)(WIN_WIDTH*sizeof(u32)));
     SDL_RenderCopy(renderer, cb_texture, 0, 0);
 
-    for (u32 y = 0; y < WIN_HEIGHT; ++y) {
-      for (u32 x = 0; x < WIN_WIDTH; ++x) {
-        if ((y != 0 && x != 0) && (y % 10 == 0 && x % 10 == 0)) {
-          color_buff[(WIN_WIDTH * y) + x] = 0xFFA0A8B9;
-        } else {
-          color_buff[(WIN_WIDTH * y) + x] = 0xFF616E8B;
-        }
-      }
-    }
     SDL_RenderPresent(renderer);
   }
 
