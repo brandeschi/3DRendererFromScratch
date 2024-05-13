@@ -4,7 +4,7 @@ global b32 AppRunning = false;
 global const u32 WIN_WIDTH = 1200;
 global const u32 WIN_HEIGHT = 900;
 global const u32 CUBE_DIMS = 9*9*9;
-global const f32 FOV_FACTOR = 128.0f;
+global const f32 FOV_FACTOR = 360.0f;
 
 static void DrawRect(u32 *ColorBuffer, u32 x, u32 y, u32 w, u32 h, u32 Color) {
   neo_assert(x >= 0 && x + w <= WIN_WIDTH);
@@ -58,6 +58,7 @@ int main(int argc, char** argv) {
   }
   SDL_Texture *CBTexture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIN_WIDTH, WIN_HEIGHT);
 
+  v3 CameraPos = { 0.0f, 0.0f, -5.0f };
   // 9x9x9 Cube
   u32 PointCount = 0;
   v3 CubePoints[CUBE_DIMS];
@@ -73,7 +74,8 @@ int main(int argc, char** argv) {
   v2 ProjectedPoints[CUBE_DIMS];
   // 'project' 3D points to 2D
   for (u32 i = 0; i < CUBE_DIMS; ++i) {
-    ProjectedPoints[i] = { (CubePoints[i].x*FOV_FACTOR), (CubePoints[i].y*FOV_FACTOR) };
+    CubePoints[i].z -= CameraPos.z;
+    ProjectedPoints[i] = { (CubePoints[i].x*FOV_FACTOR) / CubePoints[i].z, (CubePoints[i].y*FOV_FACTOR) / CubePoints[i].z };
   }
 
   AppRunning = true;
