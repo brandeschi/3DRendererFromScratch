@@ -125,8 +125,8 @@ int main(int argc, char** argv) {
     CubeRotation.z += 0.001f;
     // 'project' 3D points to 2D
     for (u32 i = 0; i < CUBE_DIMS; ++i) {
-      v3 YRotation = V3RotateY(CubePoints[i], CubeRotation.y);
-      v3 NewPoint = V3RotateZ(YRotation, CubeRotation.z);
+      v3 NewPoint = V3RotateY(CubePoints[i], CubeRotation.y);
+      NewPoint = V3RotateZ(NewPoint, CubeRotation.z);
       NewPoint.z -= CameraPos.z;
       ProjectedPoints[i] = { (NewPoint.x*FOV_FACTOR) / NewPoint.z, (NewPoint.y*FOV_FACTOR) / NewPoint.z };
     }
