@@ -6,6 +6,35 @@ global const u32 WIN_HEIGHT = 900;
 global const u32 CUBE_DIMS = 9*9*9;
 global const f32 FOV_FACTOR = 360.0f;
 
+// TODO: Try out these with turns?
+static v3 V3RotateX(v3 InitialVector, f32 Angle) {
+  v3 Result = {
+    InitialVector.x,
+    InitialVector.y*cosf(Angle) - InitialVector.z*sinf(Angle),
+    InitialVector.z*cosf(Angle) + InitialVector.y*sinf(Angle)
+  };
+
+  return Result;
+}
+static v3 V3RotateY(v3 InitialVector, f32 Angle) {
+  v3 Result = {
+    InitialVector.x*cosf(Angle) - InitialVector.z*sinf(Angle),
+    InitialVector.y,
+    InitialVector.z*cosf(Angle) + InitialVector.x*sinf(Angle)
+  };
+
+  return Result;
+}
+static v3 V3RotateZ(v3 InitialVector, f32 Angle) {
+  v3 Result = {
+    InitialVector.x*cosf(Angle) - InitialVector.y*sinf(Angle),
+    InitialVector.y*cosf(Angle) + InitialVector.x*sinf(Angle),
+    InitialVector.z
+  };
+
+  return Result;
+}
+
 static void DrawRect(u32 *ColorBuffer, u32 x, u32 y, u32 w, u32 h, u32 Color) {
   neo_assert(x >= 0 && x + w <= WIN_WIDTH);
   neo_assert(y >= 0 && y + h <= WIN_HEIGHT);
@@ -59,6 +88,7 @@ int main(int argc, char** argv) {
   SDL_Texture *CBTexture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIN_WIDTH, WIN_HEIGHT);
 
   v3 CameraPos = { 0.0f, 0.0f, -5.0f };
+  v3 CubeRotation = { 0.0f, 0.0f, 0.0f };
   // 9x9x9 Cube
   u32 PointCount = 0;
   v3 CubePoints[CUBE_DIMS];
@@ -72,12 +102,6 @@ int main(int argc, char** argv) {
   }
 
   v2 ProjectedPoints[CUBE_DIMS];
-  // 'project' 3D points to 2D
-  for (u32 i = 0; i < CUBE_DIMS; ++i) {
-    CubePoints[i].z -= CameraPos.z;
-    ProjectedPoints[i] = { (CubePoints[i].x*FOV_FACTOR) / CubePoints[i].z, (CubePoints[i].y*FOV_FACTOR) / CubePoints[i].z };
-  }
-
   AppRunning = true;
   while (AppRunning) {
     // INPUT
@@ -96,6 +120,16 @@ int main(int argc, char** argv) {
     }
 
     // UPDATE
+
+    CubeRotation.y += 0.001f;
+    CubeRotation.z += 0.001f;
+    // 'project' 3D points to 2D
+    for (u32 i = 0; i < CUBE_DIMS; ++i) {
+      v3 YRotation = V3RotateY(CubePoints[i], CubeRotation.y);
+      v3 NewPoint = V3RotateZ(YRotation, CubeRotation.z);
+      NewPoint.z -= CameraPos.z;
+      ProjectedPoints[i] = { (NewPoint.x*FOV_FACTOR) / NewPoint.z, (NewPoint.y*FOV_FACTOR) / NewPoint.z };
+    }
 
     // RENDER
 
