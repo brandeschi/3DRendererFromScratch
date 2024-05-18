@@ -66,6 +66,23 @@ static v3 V3RotateZ(v3 InitialVector, f32 Angle) {
   return Result;
 }
 
+static void DrawLine(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1, u32 Color) {
+  i32 DeltaX = x1 - x0;
+  i32 DeltaY = y1 - y0;
+
+  i32 SideLength = abs(DeltaX) >= abs(DeltaY) ? abs(DeltaX) : abs(DeltaY);
+  f32 XIncrement = (f32)DeltaX / (f32)SideLength;
+  f32 YIncrement = (f32)DeltaY / (f32)SideLength;
+
+  f32 CurrentX = (f32)x0;
+  f32 CurrentY = (f32)y0;
+  for (i32 i = 0; i < SideLength; ++i) {
+    ColorBuffer[(WIN_WIDTH*(u32)roundf(CurrentY)) + (u32)roundf(CurrentX)] = Color;
+    CurrentX += XIncrement;
+    CurrentY += YIncrement;
+  }
+}
+
 static void DrawRect(u32 *ColorBuffer, u32 x, u32 y, u32 w, u32 h, u32 Color) {
   neo_assert(x >= 0 && x + w <= WIN_WIDTH);
   neo_assert(y >= 0 && y + h <= WIN_HEIGHT);
@@ -178,7 +195,9 @@ int main(int argc, char** argv) {
     // Clear
     for (u32 y = 0; y < WIN_HEIGHT; ++y) {
       for (u32 x = 0; x < WIN_WIDTH; ++x) {
-          ColorBuff[(WIN_WIDTH * y) + x] = 0xFF616E8B;
+        // ColorBuff[(WIN_WIDTH * y) + x] = 0xFF616E8B;
+        // Darker Background
+        ColorBuff[(WIN_WIDTH * y) + x] = 0xFF3A4253;
       }
     }
     // Dot Matrix
@@ -194,9 +213,12 @@ int main(int argc, char** argv) {
     // Triangle vertices for each face of the mesh
     // At this stage, there are multiple overdraws of the vertices
     for (u32 i = 0; i < MESH_FACE_COUNT; ++i) {
-      DrawRect(ColorBuff, (u32)Triangles[i].vertices[0].x, (u32)Triangles[i].vertices[0].y, 5, 5, 0xFF00FF00);
-      DrawRect(ColorBuff, (u32)Triangles[i].vertices[1].x, (u32)Triangles[i].vertices[1].y, 5, 5, 0xFF00FF00);
-      DrawRect(ColorBuff, (u32)Triangles[i].vertices[2].x, (u32)Triangles[i].vertices[2].y, 5, 5, 0xFF00FF00);
+      DrawRect(ColorBuff, (u32)Triangles[i].vertices[0].x, (u32)Triangles[i].vertices[0].y, 3, 3, 0xFF00FF00);
+      DrawRect(ColorBuff, (u32)Triangles[i].vertices[1].x, (u32)Triangles[i].vertices[1].y, 3, 3, 0xFF00FF00);
+      DrawRect(ColorBuff, (u32)Triangles[i].vertices[2].x, (u32)Triangles[i].vertices[2].y, 3, 3, 0xFF00FF00);
+      DrawLine(ColorBuff, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, 0xFF00FF00);
+      DrawLine(ColorBuff, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, 0xFF00FF00);
+      DrawLine(ColorBuff, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, 0xFF00FF00);
     }
 
     SDL_UpdateTexture(CBTexture, 0, ColorBuff, (int)(WIN_WIDTH*sizeof(u32)));
