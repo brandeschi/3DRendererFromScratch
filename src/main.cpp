@@ -10,23 +10,14 @@ struct triangle {
   v2 vertices[3];
 };
 
-#define MESH_FACE_COUNT (6 * 2) // 6 faces; 2 triangles per face
-face_index MeshFaces[MESH_FACE_COUNT] = {
-  // front
-  { 1, 2, 3 }, { 1, 3, 4 },
-  // right
-  { 4, 3, 5 }, { 4, 5, 6 },
-  // back
-  { 6, 5, 7 }, { 6, 7, 8 },
-  // left
-  { 8, 7, 2 }, { 8, 2, 1 },
-  // top
-  { 2, 7, 5 }, { 2, 5, 3 },
-  // bottom
-  { 6, 8, 1 }, { 6, 1, 4 }
+struct mesh {
+  v3 *vertices;
+  face_index *faces;
+  v3 rotation;
 };
 
 triangle *Triangles = 0;
+global mesh Mesh = {0};
 
 global b32 AppRunning = false;
 global u32 PrevFrameTime = 0;
@@ -135,8 +126,8 @@ int main(int argc, char** argv) {
   }
   SDL_Texture *CBTexture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIN_WIDTH, WIN_HEIGHT);
 
-#define MESH_VERTICES_COUNT 8
-  v3 MeshVertices[MESH_VERTICES_COUNT] = {
+#define CUBE_VERTICES_COUNT 8
+  v3 CubeVertices[CUBE_VERTICES_COUNT] = {
     { -1.0f, -1.0f, -1.0f }, // 1
     { -1.0f,  1.0f, -1.0f }, // 2
     {  1.0f,  1.0f, -1.0f }, // 3
@@ -147,8 +138,31 @@ int main(int argc, char** argv) {
     { -1.0f, -1.0f,  1.0f }, // 8
   };
 
+#define CUBE_FACE_COUNT (6 * 2) // 6 faces; 2 triangles per face
+face_index CubeFaces[CUBE_FACE_COUNT] = {
+  // front
+  { 1, 2, 3 }, { 1, 3, 4 },
+  // right
+  { 4, 3, 5 }, { 4, 5, 6 },
+  // back
+  { 6, 5, 7 }, { 6, 7, 8 },
+  // left
+  { 8, 7, 2 }, { 8, 2, 1 },
+  // top
+  { 2, 7, 5 }, { 2, 5, 3 },
+  // bottom
+  { 6, 8, 1 }, { 6, 1, 4 }
+};
+
   v3 CameraPos = { 0.0f, 0.0f, -5.0f };
-  v3 CubeRotation = { 0.0f, 0.0f, 0.0f };
+  // Load cube mesh data
+  for (u32 i = 0; i < CUBE_VERTICES_COUNT; ++i) {
+    array_push(Mesh.vertices, v3, CubeVertices[i]);
+  }
+  for (u32 i = 0; i < CUBE_FACE_COUNT; ++i) {
+    array_push(Mesh.faces, face_index, CubeFaces[i]);
+  }
+
   AppRunning = true;
   while (AppRunning) {
     // INPUT
@@ -168,23 +182,23 @@ int main(int argc, char** argv) {
 
     // UPDATE
 
-    CubeRotation.y += 0.01f;
-    CubeRotation.z += 0.01f;
+    Mesh.rotation.y += 0.01f;
+    Mesh.rotation.z += 0.01f;
 
     // Cube Verts (8)
     Triangles = 0;
-    for (u32 i = 0; i < MESH_FACE_COUNT; ++i) {
+    for (i32 i = 0; i < array_length(Mesh.faces); ++i) {
       // Collect vertices of triangle for each face
       v3 FaceVerts[3];
-      FaceVerts[0] = MeshVertices[MeshFaces[i].a - 1];
-      FaceVerts[1] = MeshVertices[MeshFaces[i].b - 1];
-      FaceVerts[2] = MeshVertices[MeshFaces[i].c - 1];
+      FaceVerts[0] = CubeVertices[Mesh.faces[i].a - 1];
+      FaceVerts[1] = CubeVertices[Mesh.faces[i].b - 1];
+      FaceVerts[2] = CubeVertices[Mesh.faces[i].c - 1];
 
       triangle CurrentTriangle = {0};
       // Projection work on each vertex of triangle
       for (u32 j = 0; j < arr_count(FaceVerts); ++j) {
-        v3 NewVert = V3RotateY(FaceVerts[j], CubeRotation.y);
-        NewVert = V3RotateZ(NewVert, CubeRotation.z);
+        v3 NewVert = V3RotateY(FaceVerts[j], Mesh.rotation.y);
+        NewVert = V3RotateZ(NewVert, Mesh.rotation.z);
         NewVert.z -= CameraPos.z;
 
         v2 ProjectedPoint = { (NewVert.x*FOV_FACTOR) / NewVert.z, (NewVert.y*FOV_FACTOR) / NewVert.z };
@@ -232,6 +246,7 @@ int main(int argc, char** argv) {
     SDL_RenderPresent(Renderer);
 
     array_free(Triangles);
+
     SyncTime = TARGET_FRAME_TIME - (SDL_GetTicks() - PrevFrameTime);
     if (SyncTime > 0) {
       SDL_Delay(SyncTime);
