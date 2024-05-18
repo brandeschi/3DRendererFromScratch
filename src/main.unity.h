@@ -2,6 +2,7 @@
 
 // C headers
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <SDL.h>
 
@@ -30,4 +31,5 @@ typedef double f64;
 // Sub TU
 #include "math.cpp"
 #include "mesh.cpp"
+#include "array.cpp"
 

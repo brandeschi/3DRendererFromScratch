@@ -26,7 +26,7 @@ face_index MeshFaces[MESH_FACE_COUNT] = {
   { 6, 8, 1 }, { 6, 1, 4 }
 };
 
-triangle Triangles[MESH_FACE_COUNT];
+triangle *Triangles = 0;
 
 global b32 AppRunning = false;
 global u32 PrevFrameTime = 0;
@@ -167,16 +167,20 @@ int main(int argc, char** argv) {
     }
 
     // UPDATE
+
     CubeRotation.y += 0.01f;
     CubeRotation.z += 0.01f;
 
     // Cube Verts (8)
+    Triangles = 0;
     for (u32 i = 0; i < MESH_FACE_COUNT; ++i) {
       // Collect vertices of triangle for each face
       v3 FaceVerts[3];
       FaceVerts[0] = MeshVertices[MeshFaces[i].a - 1];
       FaceVerts[1] = MeshVertices[MeshFaces[i].b - 1];
       FaceVerts[2] = MeshVertices[MeshFaces[i].c - 1];
+
+      triangle CurrentTriangle = {0};
       // Projection work on each vertex of triangle
       for (u32 j = 0; j < arr_count(FaceVerts); ++j) {
         v3 NewVert = V3RotateY(FaceVerts[j], CubeRotation.y);
@@ -186,8 +190,10 @@ int main(int argc, char** argv) {
         v2 ProjectedPoint = { (NewVert.x*FOV_FACTOR) / NewVert.z, (NewVert.y*FOV_FACTOR) / NewVert.z };
         ProjectedPoint.x += (f32)(WIN_WIDTH / 2);
         ProjectedPoint.y += (f32)(WIN_HEIGHT / 2);
-        Triangles[i].vertices[j] = ProjectedPoint;
+        CurrentTriangle.vertices[j] = ProjectedPoint;
       }
+
+      array_push(Triangles, triangle, CurrentTriangle);
     }
 
     // RENDER
@@ -212,7 +218,7 @@ int main(int argc, char** argv) {
 
     // Triangle vertices for each face of the mesh
     // At this stage, there are multiple overdraws of the vertices
-    for (u32 i = 0; i < MESH_FACE_COUNT; ++i) {
+    for (i32 i = 0; i < array_length(Triangles); ++i) {
       DrawRect(ColorBuff, (u32)Triangles[i].vertices[0].x, (u32)Triangles[i].vertices[0].y, 3, 3, 0xFF00FF00);
       DrawRect(ColorBuff, (u32)Triangles[i].vertices[1].x, (u32)Triangles[i].vertices[1].y, 3, 3, 0xFF00FF00);
       DrawRect(ColorBuff, (u32)Triangles[i].vertices[2].x, (u32)Triangles[i].vertices[2].y, 3, 3, 0xFF00FF00);
@@ -225,6 +231,7 @@ int main(int argc, char** argv) {
     SDL_RenderCopy(Renderer, CBTexture, 0, 0);
     SDL_RenderPresent(Renderer);
 
+    array_free(Triangles);
     SyncTime = TARGET_FRAME_TIME - (SDL_GetTicks() - PrevFrameTime);
     if (SyncTime > 0) {
       SDL_Delay(SyncTime);
