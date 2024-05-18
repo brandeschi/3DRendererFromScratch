@@ -25,6 +25,7 @@ typedef double f64;
 
 #define global static
 #define neo_assert(expression) if (!(expression)) { *(int *)0 = 0; }
+#define arr_count(array) (sizeof(array) / sizeof((array)[0]))
 
 // Sub TU
 #include "math.cpp"

@@ -1,5 +1,33 @@
 #include "main.unity.h"
 
+struct face_index {
+  i32 a;
+  i32 b;
+  i32 c;
+};
+
+struct triangle {
+  v2 vertices[3];
+};
+
+#define MESH_FACE_COUNT (6 * 2) // 6 faces; 2 triangles per face
+face_index MeshFaces[MESH_FACE_COUNT] = {
+  // front
+  { 1, 2, 3 }, { 1, 3, 4 },
+  // right
+  { 4, 3, 5 }, { 4, 5, 6 },
+  // back
+  { 6, 5, 7 }, { 6, 7, 8 },
+  // left
+  { 8, 7, 2 }, { 8, 2, 1 },
+  // top
+  { 2, 7, 5 }, { 2, 5, 3 },
+  // bottom
+  { 6, 8, 1 }, { 6, 1, 4 }
+};
+
+triangle Triangles[MESH_FACE_COUNT];
+
 global b32 AppRunning = false;
 global u32 PrevFrameTime = 0;
 global i32 SyncTime = 0;
@@ -7,7 +35,6 @@ global i32 SyncTime = 0;
 #define TARGET_FRAME_TIME (1000 / FPS)
 global const u32 WIN_WIDTH = 1200;
 global const u32 WIN_HEIGHT = 900;
-global const u32 CUBE_DIMS = 9*9*9;
 global const f32 FOV_FACTOR = 360.0f;
 
 // TODO: Try out these with turns?
@@ -91,21 +118,20 @@ int main(int argc, char** argv) {
   }
   SDL_Texture *CBTexture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIN_WIDTH, WIN_HEIGHT);
 
+#define MESH_VERTICES_COUNT 8
+  v3 MeshVertices[MESH_VERTICES_COUNT] = {
+    { -1.0f, -1.0f, -1.0f }, // 1
+    { -1.0f,  1.0f, -1.0f }, // 2
+    {  1.0f,  1.0f, -1.0f }, // 3
+    {  1.0f, -1.0f, -1.0f }, // 4
+    {  1.0f,  1.0f,  1.0f }, // 5
+    {  1.0f, -1.0f,  1.0f }, // 6
+    { -1.0f,  1.0f,  1.0f }, // 7
+    { -1.0f, -1.0f,  1.0f }, // 8
+  };
+
   v3 CameraPos = { 0.0f, 0.0f, -5.0f };
   v3 CubeRotation = { 0.0f, 0.0f, 0.0f };
-  // 9x9x9 Cube
-  u32 PointCount = 0;
-  v3 CubePoints[CUBE_DIMS];
-  for (f32 x = -1.0f; x <= 1.0f; x += 0.25f) {
-    for (f32 y = -1.0f; y <= 1.0f; y += 0.25f) {
-      for (f32 z = -1.0f; z <= 1.0f; z += 0.25f) {
-        v3 CubePoint = { x, y, z };
-        CubePoints[PointCount++] = CubePoint;
-      }
-    }
-  }
-
-  v2 ProjectedPoints[CUBE_DIMS];
   AppRunning = true;
   while (AppRunning) {
     // INPUT
@@ -126,12 +152,25 @@ int main(int argc, char** argv) {
     // UPDATE
     CubeRotation.y += 0.01f;
     CubeRotation.z += 0.01f;
-    // 'project' 3D points to 2D
-    for (u32 i = 0; i < CUBE_DIMS; ++i) {
-      v3 NewPoint = V3RotateY(CubePoints[i], CubeRotation.y);
-      NewPoint = V3RotateZ(NewPoint, CubeRotation.z);
-      NewPoint.z -= CameraPos.z;
-      ProjectedPoints[i] = { (NewPoint.x*FOV_FACTOR) / NewPoint.z, (NewPoint.y*FOV_FACTOR) / NewPoint.z };
+
+    // Cube Verts (8)
+    for (u32 i = 0; i < MESH_FACE_COUNT; ++i) {
+      // Collect vertices of triangle for each face
+      v3 FaceVerts[3];
+      FaceVerts[0] = MeshVertices[MeshFaces[i].a - 1];
+      FaceVerts[1] = MeshVertices[MeshFaces[i].b - 1];
+      FaceVerts[2] = MeshVertices[MeshFaces[i].c - 1];
+      // Projection work on each vertex of triangle
+      for (u32 j = 0; j < arr_count(FaceVerts); ++j) {
+        v3 NewVert = V3RotateY(FaceVerts[j], CubeRotation.y);
+        NewVert = V3RotateZ(NewVert, CubeRotation.z);
+        NewVert.z -= CameraPos.z;
+
+        v2 ProjectedPoint = { (NewVert.x*FOV_FACTOR) / NewVert.z, (NewVert.y*FOV_FACTOR) / NewVert.z };
+        ProjectedPoint.x += (f32)(WIN_WIDTH / 2);
+        ProjectedPoint.y += (f32)(WIN_HEIGHT / 2);
+        Triangles[i].vertices[j] = ProjectedPoint;
+      }
     }
 
     // RENDER
@@ -152,8 +191,12 @@ int main(int argc, char** argv) {
       }
     }
 
-    for (u32 i = 0; i < CUBE_DIMS; ++i) {
-      DrawRect(ColorBuff, (u32)(ProjectedPoints[i].x + (f32)(WIN_WIDTH / 2)), (u32)(ProjectedPoints[i].y + (f32)(WIN_HEIGHT / 2)), 5, 5, 0xFF00FF00);
+    // Triangle vertices for each face of the mesh
+    // At this stage, there are multiple overdraws of the vertices
+    for (u32 i = 0; i < MESH_FACE_COUNT; ++i) {
+      DrawRect(ColorBuff, (u32)Triangles[i].vertices[0].x, (u32)Triangles[i].vertices[0].y, 5, 5, 0xFF00FF00);
+      DrawRect(ColorBuff, (u32)Triangles[i].vertices[1].x, (u32)Triangles[i].vertices[1].y, 5, 5, 0xFF00FF00);
+      DrawRect(ColorBuff, (u32)Triangles[i].vertices[2].x, (u32)Triangles[i].vertices[2].y, 5, 5, 0xFF00FF00);
     }
 
     SDL_UpdateTexture(CBTexture, 0, ColorBuff, (int)(WIN_WIDTH*sizeof(u32)));
