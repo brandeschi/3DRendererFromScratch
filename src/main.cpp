@@ -1,6 +1,10 @@
 #include "main.unity.h"
 
 global b32 AppRunning = false;
+global u32 PrevFrameTime = 0;
+global i32 SyncTime = 0;
+#define FPS 30
+#define TARGET_FRAME_TIME (1000 / FPS)
 global const u32 WIN_WIDTH = 1200;
 global const u32 WIN_HEIGHT = 900;
 global const u32 CUBE_DIMS = 9*9*9;
@@ -120,9 +124,8 @@ int main(int argc, char** argv) {
     }
 
     // UPDATE
-
-    CubeRotation.y += 0.001f;
-    CubeRotation.z += 0.001f;
+    CubeRotation.y += 0.01f;
+    CubeRotation.z += 0.01f;
     // 'project' 3D points to 2D
     for (u32 i = 0; i < CUBE_DIMS; ++i) {
       v3 NewPoint = V3RotateY(CubePoints[i], CubeRotation.y);
@@ -156,6 +159,12 @@ int main(int argc, char** argv) {
     SDL_UpdateTexture(CBTexture, 0, ColorBuff, (int)(WIN_WIDTH*sizeof(u32)));
     SDL_RenderCopy(Renderer, CBTexture, 0, 0);
     SDL_RenderPresent(Renderer);
+
+    SyncTime = TARGET_FRAME_TIME - (SDL_GetTicks() - PrevFrameTime);
+    if (SyncTime > 0) {
+      SDL_Delay(SyncTime);
+    }
+    PrevFrameTime = SDL_GetTicks();
   }
 
   return 0;
