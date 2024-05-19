@@ -20,10 +20,10 @@ struct mesh {
 };
 
 struct obj_file {
-  char *FileContent;
-  face_index *Faces;
-  v3 *VertexPositions;
-  u32 FileSize;
+  char *file_content;
+  face_index *faces;
+  v3 *vertices;
+  u32 file_size;
 };
 
 static obj_file LoadObjFile(char *FileName);

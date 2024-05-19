@@ -10,7 +10,7 @@ global i32 SyncTime = 0;
 #define TARGET_FRAME_TIME (1000 / FPS)
 global const u32 WIN_WIDTH = 1200;
 global const u32 WIN_HEIGHT = 900;
-global const f32 FOV_FACTOR = 360.0f;
+global const f32 FOV_FACTOR = 720.0f;
 
 // TODO: Try out these with turns?
 static v3 V3RotateX(v3 InitialVector, f32 Angle) {
@@ -110,7 +110,8 @@ int main(int argc, char** argv) {
   }
   SDL_Texture *CBTexture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIN_WIDTH, WIN_HEIGHT);
 
-  obj_file CubeMesh = LoadObjFile("./assets/cube.obj");
+  // obj_file CubeMesh = LoadObjFile("./assets/cube.obj");
+  obj_file CubeMesh = LoadObjFile("./assets/f22.obj");
 #define CUBE_VERTICES_COUNT 8
   v3 CubeVertices[CUBE_VERTICES_COUNT] = {
     { -1.0f, -1.0f, -1.0f }, // 1
@@ -141,12 +142,14 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
   v3 CameraPos = { 0.0f, 0.0f, -5.0f };
   // Load cube mesh data
-  for (u32 i = 0; i < CUBE_VERTICES_COUNT; ++i) {
-    array_push(Mesh.vertices, v3, CubeVertices[i]);
-  }
-  for (u32 i = 0; i < CUBE_FACE_COUNT; ++i) {
-    array_push(Mesh.faces, face_index, CubeFaces[i]);
-  }
+  // for (u32 i = 0; i < CUBE_VERTICES_COUNT; ++i) {
+  //   array_push(Mesh.vertices, v3, CubeVertices[i]);
+  // }
+  // for (u32 i = 0; i < CUBE_FACE_COUNT; ++i) {
+  //   array_push(Mesh.faces, face_index, CubeFaces[i]);
+  // }
+  Mesh.vertices = CubeMesh.vertices;
+  Mesh.faces = CubeMesh.faces;
 
   AppRunning = true;
   while (AppRunning) {
@@ -167,23 +170,25 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
     // UPDATE
 
-    Mesh.rotation.y += 0.01f;
-    Mesh.rotation.z += 0.01f;
+    Mesh.rotation.x += 0.01f;
+    // Mesh.rotation.y += 0.01f;
+    // Mesh.rotation.z += 0.01f;
 
     // Cube Verts (8)
     Triangles = 0;
     for (i32 i = 0; i < array_length(Mesh.faces); ++i) {
       // Collect vertices of triangle for each face
       v3 FaceVerts[3];
-      FaceVerts[0] = CubeVertices[Mesh.faces[i].a - 1];
-      FaceVerts[1] = CubeVertices[Mesh.faces[i].b - 1];
-      FaceVerts[2] = CubeVertices[Mesh.faces[i].c - 1];
+      FaceVerts[0] = Mesh.vertices[Mesh.faces[i].a - 1];
+      FaceVerts[1] = Mesh.vertices[Mesh.faces[i].b - 1];
+      FaceVerts[2] = Mesh.vertices[Mesh.faces[i].c - 1];
 
       triangle CurrentTriangle = {0};
       // Projection work on each vertex of triangle
       for (u32 j = 0; j < arr_count(FaceVerts); ++j) {
-        v3 NewVert = V3RotateY(FaceVerts[j], Mesh.rotation.y);
-        NewVert = V3RotateZ(NewVert, Mesh.rotation.z);
+        // v3 NewVert = V3RotateY(FaceVerts[j], Mesh.rotation.y);
+        // NewVert = V3RotateZ(NewVert, Mesh.rotation.z);
+        v3 NewVert = V3RotateX(FaceVerts[j], Mesh.rotation.x);
         NewVert.z -= CameraPos.z;
 
         v2 ProjectedPoint = { (NewVert.x*FOV_FACTOR) / NewVert.z, (NewVert.y*FOV_FACTOR) / NewVert.z };
@@ -218,9 +223,9 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     // Triangle vertices for each face of the mesh
     // At this stage, there are multiple overdraws of the vertices
     for (i32 i = 0; i < array_length(Triangles); ++i) {
-      DrawRect(ColorBuff, (u32)Triangles[i].vertices[0].x, (u32)Triangles[i].vertices[0].y, 3, 3, 0xFF00FF00);
-      DrawRect(ColorBuff, (u32)Triangles[i].vertices[1].x, (u32)Triangles[i].vertices[1].y, 3, 3, 0xFF00FF00);
-      DrawRect(ColorBuff, (u32)Triangles[i].vertices[2].x, (u32)Triangles[i].vertices[2].y, 3, 3, 0xFF00FF00);
+      DrawRect(ColorBuff, (u32)Triangles[i].vertices[0].x, (u32)Triangles[i].vertices[0].y, 1, 1, 0xFF00FF00);
+      DrawRect(ColorBuff, (u32)Triangles[i].vertices[1].x, (u32)Triangles[i].vertices[1].y, 1, 1, 0xFF00FF00);
+      DrawRect(ColorBuff, (u32)Triangles[i].vertices[2].x, (u32)Triangles[i].vertices[2].y, 1, 1, 0xFF00FF00);
       DrawLine(ColorBuff, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, 0xFF00FF00);
       DrawLine(ColorBuff, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, 0xFF00FF00);
       DrawLine(ColorBuff, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, 0xFF00FF00);
