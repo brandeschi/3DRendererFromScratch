@@ -110,8 +110,8 @@ int main(int argc, char** argv) {
   }
   SDL_Texture *CBTexture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIN_WIDTH, WIN_HEIGHT);
 
-  // obj_file CubeMesh = LoadObjFile("./assets/cube.obj");
-  obj_file CubeMesh = LoadObjFile("./assets/f22.obj");
+  // mesh CubeMesh = LoadObjFile("./assets/cube.obj");
+  mesh CubeMesh = LoadMeshFromObjFile("./assets/f22.obj");
 #define CUBE_VERTICES_COUNT 8
   v3 CubeVertices[CUBE_VERTICES_COUNT] = {
     { -1.0f, -1.0f, -1.0f }, // 1

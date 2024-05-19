@@ -19,12 +19,5 @@ struct mesh {
   v3 rotation;
 };
 
-struct obj_file {
-  char *file_content;
-  face_index *faces;
-  v3 *vertices;
-  u32 file_size;
-};
-
-static obj_file LoadObjFile(char *FileName);
+static mesh LoadMeshFromObjFile(char *FileName);
 
