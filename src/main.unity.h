@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <SDL.h>
 
 // Type Definitions!
@@ -30,6 +31,6 @@ typedef double f64;
 
 // Sub TU
 #include "math.cpp"
-#include "mesh.cpp"
 #include "array.cpp"
+#include "mesh.cpp"
 

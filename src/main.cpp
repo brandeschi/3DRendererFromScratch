@@ -1,21 +1,5 @@
 #include "main.unity.h"
 
-struct face_index {
-  i32 a;
-  i32 b;
-  i32 c;
-};
-
-struct triangle {
-  v2 vertices[3];
-};
-
-struct mesh {
-  v3 *vertices;
-  face_index *faces;
-  v3 rotation;
-};
-
 triangle *Triangles = 0;
 global mesh Mesh = {0};
 
@@ -126,6 +110,7 @@ int main(int argc, char** argv) {
   }
   SDL_Texture *CBTexture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIN_WIDTH, WIN_HEIGHT);
 
+  obj_file CubeMesh = LoadObjFile("./assets/cube.obj");
 #define CUBE_VERTICES_COUNT 8
   v3 CubeVertices[CUBE_VERTICES_COUNT] = {
     { -1.0f, -1.0f, -1.0f }, // 1
