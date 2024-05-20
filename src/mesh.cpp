@@ -25,7 +25,13 @@ static mesh LoadMeshFromObjFile(char *FileName) {
         u32 VertexIndex = 0;
         while ((CurrentChar = *LinePtr++) != '\0') {
           if (CurrentChar == ' ' || CurrentChar == '\n') {
-            Vertex.e[VertexIndex++] = (f32)atof(VertComponent);
+            if (VertexIndex == 1) {
+              f32 Temp = (f32)atof(VertComponent);
+              Temp *= -1.0f;
+              Vertex.e[VertexIndex++] = Temp;
+            } else {
+              Vertex.e[VertexIndex++] = (f32)atof(VertComponent);
+            }
             memset(VertComponent, 0, 16);
             VCPtr = &VertComponent[0];
           } else {
