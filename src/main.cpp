@@ -196,7 +196,10 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
       v3 FaceVertC = FaceVerts[2];
       v3 VectorBA = FaceVertB - FaceVertA;
       v3 VectorCA = FaceVertC - FaceVertA;
+      V3Normalize(&VectorBA);
+      V3Normalize(&VectorCA);
       v3 FaceNormal = CrossProduct(VectorBA, VectorCA);
+      V3Normalize(&FaceNormal);
       // v3 FaceNormal = CrossProduct(VectorCA, VectorBA);
       v3 CameraRay = CameraPos - FaceVertA;
       // v3 CameraRay = FaceVertA - CameraPos;

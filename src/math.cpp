@@ -100,10 +100,16 @@ inline f32 DotProduct(v2 a, v2 b)
 //     return result;
 // }
 
-inline f32 Vector2Length(v2 Vector) {
+inline f32 V2Length(v2 Vector) {
   f32 Result = 0.0f;
   Result = sqrtf((Vector.x*Vector.x) + (Vector.y*Vector.y));
   return Result;
+}
+
+inline void V2Normalize(v2 *Vector) {
+  f32 VectorLength = V2Length(*Vector);
+  Vector->x = Vector->x / VectorLength;
+  Vector->y = Vector->y / VectorLength;
 }
 
 // V3
@@ -211,8 +217,16 @@ inline v3 CrossProduct(v3 a, v3 b) {
   return Result;
 }
 
-inline f32 Vector3Length(v3 Vector) {
+inline f32 V3Length(v3 Vector) {
   f32 Result = 0.0f;
   Result = sqrtf((Vector.x*Vector.x) + (Vector.y*Vector.y) + (Vector.z*Vector.z));
   return Result;
 }
+
+inline void V3Normalize(v3 *Vector) {
+  f32 VectorLength = V3Length(*Vector);
+  Vector->x = Vector->x / VectorLength;
+  Vector->y = Vector->y / VectorLength;
+  Vector->z = Vector->z / VectorLength;
+}
+
