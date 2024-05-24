@@ -12,6 +12,12 @@ global const u32 WIN_WIDTH = 1200;
 global const u32 WIN_HEIGHT = 900;
 global const f32 FOV_FACTOR = 640.0f;
 
+inline void SwapI32(i32 *a, i32 *b) {
+  i32 temp = *a;
+  *a = *b;
+  *b = temp;
+}
+
 // TODO: Try out these with turns?
 static v3 V3RotateX(v3 InitialVector, f32 Angle) {
   v3 Result = {
@@ -41,6 +47,7 @@ static v3 V3RotateZ(v3 InitialVector, f32 Angle) {
   return Result;
 }
 
+// Draw Funcs
 static void DrawLine(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1, u32 Color) {
   i32 DeltaX = x1 - x0;
   i32 DeltaY = y1 - y0;
@@ -55,6 +62,45 @@ static void DrawLine(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1, u32 Color
     ColorBuffer[(WIN_WIDTH*(u32)roundf(CurrentY)) + (u32)roundf(CurrentX)] = Color;
     CurrentX += XIncrement;
     CurrentY += YIncrement;
+  }
+}
+
+static void DrawFilledTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1, i32 x2, i32 y2, u32 Color) {
+  // NOTE: This uses the Flat-top/Flat-bottom method
+  // Ensure y's are sorted with y0 being the smallest and y2 being the largest
+  if (y0 > y1) {
+    SwapI32(&y0, &y1);
+    SwapI32(&x0, &x1);
+  }
+  if (y1 > y2) {
+    SwapI32(&y1, &y2);
+    SwapI32(&x1, &x2);
+  }
+  if (y0 > y1) {
+    SwapI32(&y0, &y1);
+    SwapI32(&x0, &x1);
+  }
+
+  i32 My = y1;
+  i32 Mx = (i32)(((f32)((x2 - x0)*(y1 - y0)) / (f32)(y2 - y0)) + x0);
+
+  // Flat-top
+  // Since we will always move downward at a constant Y, we actually want to find the INVERSE slope of the line
+  i32 DeltaX1X0 = x1 - x0;
+  i32 DeltaY1Y0 = y1 - y0;
+  i32 DeltaX2X0 = Mx - x0;
+  i32 DeltaY2Y0 = My - y0;
+  f32 InvSlopeX1Y1 = (f32)DeltaX1X0 / (f32)DeltaY1Y0;
+  f32 InvSlopeX2Y2 = (f32)DeltaX2X0 / (f32)DeltaY2Y0;
+
+  f32 StartX = (f32)x0;
+  f32 EndX = (f32)x0;
+  for (i32 row = y0; row <= y2; ++row) {
+    StartX += InvSlopeX1Y1;
+    EndX += InvSlopeX2Y2;
+    for (i32 col = (i32)StartX; col < (i32)EndX; ++col) {
+      ColorBuffer[(WIN_WIDTH*row) + col] = Color;
+    }
   }
 }
 
@@ -239,6 +285,9 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
       }
     }
 
+    DrawFilledTriangle(ColorBuff, 500, 200, 350, 300, 525, 400, 0xFF00FF00);
+
+#if 0
     // Triangle vertices for each face of the mesh
     // At this stage, there are multiple overdraws of the vertices
     for (i32 i = 0; i < array_length(Triangles); ++i) {
@@ -249,6 +298,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
       DrawLine(ColorBuff, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, 0xFFFFFFFF);
       DrawLine(ColorBuff, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, 0xFFFFFFFF);
     }
+#endif
 
     SDL_UpdateTexture(CBTexture, 0, ColorBuff, (int)(WIN_WIDTH*sizeof(u32)));
     SDL_RenderCopy(Renderer, CBTexture, 0, 0);
