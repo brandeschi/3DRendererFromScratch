@@ -96,11 +96,9 @@ static void DrawFilledTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1,
   f32 StartX = (f32)x0;
   f32 EndX = (f32)x0;
   for (i32 row = y0; row <= My; ++row) {
+    DrawLine(ColorBuffer, (i32)StartX, row, (i32)EndX, row, Color);
     StartX += InvSlopeX1Y1;
     EndX += InvSlopeX2Y2;
-    for (i32 col = (i32)StartX; col < (i32)EndX; ++col) {
-      ColorBuffer[(WIN_WIDTH*row) + col] = Color;
-    }
   }
 
   // Flat-bottom
@@ -110,12 +108,12 @@ static void DrawFilledTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1,
   i32 DeltaMYY2 = My - y2;
   f32 InvSlopeOneToTwo = (f32)DeltaX1X2 / (f32)DeltaY1Y2;
   f32 InvSlopeMToTwo = (f32)DeltaMXX2 / (f32)DeltaMYY2;
+  StartX = (f32)x1;
+  EndX = (f32)Mx;
   for (i32 row = y1; row <= y2; ++row) {
+    DrawLine(ColorBuffer, (i32)StartX, row, (i32)EndX, row, Color);
     StartX += InvSlopeOneToTwo;
     EndX += InvSlopeMToTwo;
-    for (i32 col = (i32)StartX; col < (i32)EndX; ++col) {
-      ColorBuffer[(WIN_WIDTH*row) + col] = (Color + 255);
-    }
   }
 }
 
@@ -300,20 +298,17 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
       }
     }
 
-    DrawFilledTriangle(ColorBuff, 500, 200, 350, 300, 525, 400, 0xFF00FF00);
-
-#if 0
     // Triangle vertices for each face of the mesh
     // At this stage, there are multiple overdraws of the vertices
     for (i32 i = 0; i < array_length(Triangles); ++i) {
-      // DrawRect(ColorBuff, (u32)Triangles[i].vertices[0].x, (u32)Triangles[i].vertices[0].y, 4, 4, 0xFF00FF00);
-      // DrawRect(ColorBuff, (u32)Triangles[i].vertices[1].x, (u32)Triangles[i].vertices[1].y, 4, 4, 0xFF00FF00);
-      // DrawRect(ColorBuff, (u32)Triangles[i].vertices[2].x, (u32)Triangles[i].vertices[2].y, 4, 4, 0xFF00FF00);
-      DrawLine(ColorBuff, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, 0xFFFFFFFF);
-      DrawLine(ColorBuff, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, 0xFFFFFFFF);
-      DrawLine(ColorBuff, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, 0xFFFFFFFF);
+      DrawFilledTriangle(ColorBuff, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y,
+                         (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y,
+                         (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y,
+                         0xFFCCCCCC);
+      DrawLine(ColorBuff, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, 0xFF66B266);
+      DrawLine(ColorBuff, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, 0xFF66B266);
+      DrawLine(ColorBuff, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, 0xFF66B266);
     }
-#endif
 
     SDL_UpdateTexture(CBTexture, 0, ColorBuff, (int)(WIN_WIDTH*sizeof(u32)));
     SDL_RenderCopy(Renderer, CBTexture, 0, 0);
