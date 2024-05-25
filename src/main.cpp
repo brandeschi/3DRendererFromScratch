@@ -82,6 +82,9 @@ static void DrawFilledTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1,
   }
 
   i32 My = y1;
+  if (y2 - y0 == 0) {
+    y2 += 1;
+  }
   i32 Mx = (i32)(((f32)((x2 - x0)*(y1 - y0)) / (f32)(y2 - y0)) + x0);
 
   // Flat-top
