@@ -95,11 +95,26 @@ static void DrawFilledTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1,
 
   f32 StartX = (f32)x0;
   f32 EndX = (f32)x0;
-  for (i32 row = y0; row <= y2; ++row) {
+  for (i32 row = y0; row <= My; ++row) {
     StartX += InvSlopeX1Y1;
     EndX += InvSlopeX2Y2;
     for (i32 col = (i32)StartX; col < (i32)EndX; ++col) {
       ColorBuffer[(WIN_WIDTH*row) + col] = Color;
+    }
+  }
+
+  // Flat-bottom
+  i32 DeltaX1X2 = x1 - x2;
+  i32 DeltaY1Y2 = y1 - y2;
+  i32 DeltaMXX2 = Mx - x2;
+  i32 DeltaMYY2 = My - y2;
+  f32 InvSlopeOneToTwo = (f32)DeltaX1X2 / (f32)DeltaY1Y2;
+  f32 InvSlopeMToTwo = (f32)DeltaMXX2 / (f32)DeltaMYY2;
+  for (i32 row = y1; row <= y2; ++row) {
+    StartX += InvSlopeOneToTwo;
+    EndX += InvSlopeMToTwo;
+    for (i32 col = (i32)StartX; col < (i32)EndX; ++col) {
+      ColorBuffer[(WIN_WIDTH*row) + col] = (Color + 255);
     }
   }
 }
