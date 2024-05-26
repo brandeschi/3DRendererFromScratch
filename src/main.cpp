@@ -81,42 +81,70 @@ static void DrawFilledTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1,
     SwapI32(&x0, &x1);
   }
 
-  i32 My = y1;
-  if (y2 - y0 == 0) {
-    y2 += 1;
-  }
-  i32 Mx = (i32)(((f32)((x2 - x0)*(y1 - y0)) / (f32)(y2 - y0)) + x0);
+  if (y0 == y1) {
+    i32 DeltaX1X2 = x1 - x2;
+    i32 DeltaY1Y2 = y1 - y2;
+    i32 DeltaMXX2 = x0 - x2;
+    i32 DeltaMYY2 = y0 - y2;
+    f32 InvSlopeOneToTwo = (f32)DeltaX1X2 / (f32)DeltaY1Y2;
+    f32 InvSlopeMToTwo = (f32)DeltaMXX2 / (f32)DeltaMYY2;
+    f32 StartX = (f32)x1;
+    f32 EndX = (f32)x0;
+    for (i32 row = y1; row <= y2; ++row) {
+      DrawLine(ColorBuffer, (i32)StartX, row, (i32)EndX, row, Color);
+      StartX += InvSlopeOneToTwo;
+      EndX += InvSlopeMToTwo;
+    }
+  } else if (y1 == y2) {
+    i32 DeltaX1X0 = x1 - x0;
+    i32 DeltaY1Y0 = y1 - y0;
+    i32 DeltaX2X0 = x2 - x0;
+    i32 DeltaY2Y0 = y2 - y0;
+    f32 InvSlopeX1Y1 = (f32)DeltaX1X0 / (f32)DeltaY1Y0;
+    f32 InvSlopeX2Y2 = (f32)DeltaX2X0 / (f32)DeltaY2Y0;
 
-  // Flat-top
-  // Since we will always move downward at a constant Y, we actually want to find the INVERSE slope of the line
-  i32 DeltaX1X0 = x1 - x0;
-  i32 DeltaY1Y0 = y1 - y0;
-  i32 DeltaX2X0 = Mx - x0;
-  i32 DeltaY2Y0 = My - y0;
-  f32 InvSlopeX1Y1 = (f32)DeltaX1X0 / (f32)DeltaY1Y0;
-  f32 InvSlopeX2Y2 = (f32)DeltaX2X0 / (f32)DeltaY2Y0;
+    f32 StartX = (f32)x0;
+    f32 EndX = (f32)x0;
+    for (i32 row = y0; row <= y1; ++row) {
+      DrawLine(ColorBuffer, (i32)StartX, row, (i32)EndX, row, Color);
+      StartX += InvSlopeX1Y1;
+      EndX += InvSlopeX2Y2;
+    }
+  } else {
+    i32 My = y1;
+    i32 Mx = (i32)(((f32)((x2 - x0)*(y1 - y0)) / (f32)(y2 - y0)) + x0);
 
-  f32 StartX = (f32)x0;
-  f32 EndX = (f32)x0;
-  for (i32 row = y0; row <= My; ++row) {
-    DrawLine(ColorBuffer, (i32)StartX, row, (i32)EndX, row, Color);
-    StartX += InvSlopeX1Y1;
-    EndX += InvSlopeX2Y2;
-  }
+    // Flat-bottom
+    // Since we will always move downward at a constant Y, we actually want to find the INVERSE slope of the line
+    i32 DeltaX1X0 = x1 - x0;
+    i32 DeltaY1Y0 = y1 - y0;
+    i32 DeltaX2X0 = Mx - x0;
+    i32 DeltaY2Y0 = My - y0;
+    f32 InvSlopeX1Y1 = (f32)DeltaX1X0 / (f32)DeltaY1Y0;
+    f32 InvSlopeX2Y2 = (f32)DeltaX2X0 / (f32)DeltaY2Y0;
 
-  // Flat-bottom
-  i32 DeltaX1X2 = x1 - x2;
-  i32 DeltaY1Y2 = y1 - y2;
-  i32 DeltaMXX2 = Mx - x2;
-  i32 DeltaMYY2 = My - y2;
-  f32 InvSlopeOneToTwo = (f32)DeltaX1X2 / (f32)DeltaY1Y2;
-  f32 InvSlopeMToTwo = (f32)DeltaMXX2 / (f32)DeltaMYY2;
-  StartX = (f32)x1;
-  EndX = (f32)Mx;
-  for (i32 row = y1; row <= y2; ++row) {
-    DrawLine(ColorBuffer, (i32)StartX, row, (i32)EndX, row, Color);
-    StartX += InvSlopeOneToTwo;
-    EndX += InvSlopeMToTwo;
+    f32 StartX = (f32)x0;
+    f32 EndX = (f32)x0;
+    for (i32 row = y0; row <= My; ++row) {
+      DrawLine(ColorBuffer, (i32)StartX, row, (i32)EndX, row, Color);
+      StartX += InvSlopeX1Y1;
+      EndX += InvSlopeX2Y2;
+    }
+
+    // Flat-top
+    i32 DeltaX1X2 = x1 - x2;
+    i32 DeltaY1Y2 = y1 - y2;
+    i32 DeltaMXX2 = Mx - x2;
+    i32 DeltaMYY2 = My - y2;
+    f32 InvSlopeOneToTwo = (f32)DeltaX1X2 / (f32)DeltaY1Y2;
+    f32 InvSlopeMToTwo = (f32)DeltaMXX2 / (f32)DeltaMYY2;
+    StartX = (f32)x1;
+    EndX = (f32)Mx;
+    for (i32 row = y1; row <= y2; ++row) {
+      DrawLine(ColorBuffer, (i32)StartX, row, (i32)EndX, row, Color);
+      StartX += InvSlopeOneToTwo;
+      EndX += InvSlopeMToTwo;
+    }
   }
 }
 
@@ -172,8 +200,8 @@ int main(int argc, char** argv) {
   }
   SDL_Texture *CBTexture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIN_WIDTH, WIN_HEIGHT);
 
-  mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj");
-  // mesh CubeMesh = LoadMeshFromObjFile("./assets/f22.obj");
+  // mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj");
+  mesh CubeMesh = LoadMeshFromObjFile("./assets/f22.obj");
 #define CUBE_VERTICES_COUNT 8
   v3 CubeVertices[CUBE_VERTICES_COUNT] = {
     { -1.0f, -1.0f, -1.0f }, // 1
@@ -267,7 +295,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
       // v3 CameraRay = FaceVertA - CameraPos;
 
       // The DotProduct IS commutative!
-      if (DotProduct(FaceNormal, CameraRay) < 0) continue; // Skip projecting the vertices of this face as they are not visible
+      if (DotProduct(FaceNormal, CameraRay) <= 0) continue; // Skip projecting the vertices of this face as they are not visible
 
       triangle CurrentTriangle = {0};
       // Projection work on each vertex of triangle
