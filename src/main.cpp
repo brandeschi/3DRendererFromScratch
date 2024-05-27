@@ -226,29 +226,30 @@ int main(int argc, char** argv) {
 #define CUBE_FACE_COUNT (6 * 2) // 6 faces; 2 triangles per face
 face_index CubeFaces[CUBE_FACE_COUNT] = {
   // front
-  { 1, 2, 3 }, { 1, 3, 4 },
+  { 1, 2, 3, 0xFFAA1111 }, { 1, 3, 4, 0xFFAA1111 },
   // right
-  { 4, 3, 5 }, { 4, 5, 6 },
+  { 4, 3, 5, 0xFF11AA11 }, { 4, 5, 6, 0xFF11AA11 },
   // back
-  { 6, 5, 7 }, { 6, 7, 8 },
+  { 6, 5, 7, 0xFF0000FF }, { 6, 7, 8, 0xFF0000FF },
   // left
-  { 8, 7, 2 }, { 8, 2, 1 },
+  { 8, 7, 2, 0xFFFF00FF }, { 8, 2, 1, 0xFFFF00FF },
   // top
-  { 2, 7, 5 }, { 2, 5, 3 },
+  { 2, 7, 5, 0xFFFFFF00 }, { 2, 5, 3, 0xFFFFFF00 },
   // bottom
-  { 6, 8, 1 }, { 6, 1, 4 }
+  { 6, 8, 1, 0xFFFFAAAA }, { 6, 1, 4, 0xFFFFAAAA }
 };
 
   v3 CameraPos = { 0.0f, 0.0f, 0.0f };
   // Load cube mesh data
-  // for (u32 i = 0; i < CUBE_VERTICES_COUNT; ++i) {
-  //   array_push(Mesh.vertices, v3, CubeVertices[i]);
-  // }
-  // for (u32 i = 0; i < CUBE_FACE_COUNT; ++i) {
-  //   array_push(Mesh.faces, face_index, CubeFaces[i]);
-  // }
-  Mesh.vertices = CubeMesh.vertices;
-  Mesh.faces = CubeMesh.faces;
+  for (u32 i = 0; i < CUBE_VERTICES_COUNT; ++i) {
+    array_push(Mesh.vertices, v3, CubeVertices[i]);
+  }
+  for (u32 i = 0; i < CUBE_FACE_COUNT; ++i) {
+    array_push(Mesh.faces, face_index, CubeFaces[i]);
+  }
+
+  // Mesh.vertices = CubeMesh.vertices;
+  // Mesh.faces = CubeMesh.faces;
 
   AppRunning = true;
   while (AppRunning) {
@@ -309,8 +310,8 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
       // Backface Culling
       if (BackFaceCull) {
-        v3 FaceVertA = FaceVerts[1];
-        v3 FaceVertB = FaceVerts[0];
+        v3 FaceVertA = FaceVerts[0];
+        v3 FaceVertB = FaceVerts[1];
         v3 FaceVertC = FaceVerts[2];
         v3 VectorBA = FaceVertB - FaceVertA;
         v3 VectorCA = FaceVertC - FaceVertA;
@@ -318,9 +319,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
         V3Normalize(&VectorCA);
         v3 FaceNormal = CrossProduct(VectorBA, VectorCA);
         V3Normalize(&FaceNormal);
-        // v3 FaceNormal = CrossProduct(VectorCA, VectorBA);
         v3 CameraRay = CameraPos - FaceVertA;
-        // v3 CameraRay = FaceVertA - CameraPos;
 
         // The DotProduct IS commutative!
         if (DotProduct(FaceNormal, CameraRay) <= 0) continue; // Skip projecting the vertices of this face as they are not visible
@@ -335,6 +334,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
         CurrentTriangle.vertices[j] = ProjectedPoint;
       }
 
+      CurrentTriangle.color = Mesh.faces[i].color;
       array_push(Triangles, triangle, CurrentTriangle);
     }
 
@@ -365,7 +365,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
         DrawFilledTriangle(ColorBuff, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y,
                            (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y,
                            (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y,
-                           0xFFFFFFFF);
+                           Triangles[i].color);
       }
     }
     if (RenderMode & WIREFRAME) {

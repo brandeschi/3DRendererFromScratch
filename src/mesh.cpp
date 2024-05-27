@@ -53,7 +53,13 @@ static mesh LoadMeshFromObjFile(char *FileName) {
             while ((CurrentChar = *LinePtr++) != '/') {
               *FISPtr++ = CurrentChar;
             }
-            Face.e[FaceIndex++] = atoi(FaceIndexStr);
+            if (FaceIndex == 0) {
+              Face.a = atoi(FaceIndexStr);
+            } else if (FaceIndex == 1) {
+              Face.b = atoi(FaceIndexStr);
+            } else if (FaceIndex == 2) {
+              Face.c = atoi(FaceIndexStr);
+            }
             memset(FaceIndexStr, 0, 8);
             FISPtr = &FaceIndexStr[0];
           }
