@@ -26,6 +26,21 @@ inline void SwapI32(i32 *a, i32 *b) {
   *a = *b;
   *b = temp;
 }
+inline void SwapTriangles(triangle *a, triangle *b) {
+  triangle temp = *a;
+  *a = *b;
+  *b = temp;
+}
+
+void BubbleSortTrianlges(triangle *triangles) {
+  for (i32 i = 1; i < array_length(triangles); ++i) {
+    for (i32 j = 0; j < array_length(triangles) - 1; ++j) {
+      if (triangles[j].avg_depth < triangles[j + 1].avg_depth) { // < or > dependent on Coord system handness
+        SwapTriangles(&triangles[j], &triangles[j + 1]);
+      }
+    }
+  }
+}
 
 // TODO: Try out these with turns?
 static v3 V3RotateX(v3 InitialVector, f32 Angle) {
@@ -335,8 +350,13 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
       }
 
       CurrentTriangle.color = Mesh.faces[i].color;
+      CurrentTriangle.avg_depth = (FaceVerts[0].z + FaceVerts[1].z + FaceVerts[2].z) / 3.0f;
       array_push(Triangles, triangle, CurrentTriangle);
     }
+
+    // NOTE: This is will not be efficient at all...
+    // Will be very 'piggy' as i am copy swaps
+    BubbleSortTrianlges(Triangles);
 
     // RENDER
 
