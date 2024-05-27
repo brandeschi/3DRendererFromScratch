@@ -3,9 +3,18 @@
 triangle *Triangles = 0;
 global mesh Mesh = {0};
 
+// Per bit option for rendering mode
+enum RenderModeEnum {
+  WIREFRAME = 1 << 0,
+  FILLED = 1 << 1,
+  VERTICES = 1 << 2
+};
+
 global b32 AppRunning = false;
 global u32 PrevFrameTime = 0;
 global i32 SyncTime = 0;
+global b32 BackFaceCull = true;
+global u32 RenderMode = WIREFRAME | VERTICES;
 #define FPS 30
 #define TARGET_FRAME_TIME (1000 / FPS)
 global const u32 WIN_WIDTH = 1200;
@@ -200,8 +209,8 @@ int main(int argc, char** argv) {
   }
   SDL_Texture *CBTexture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIN_WIDTH, WIN_HEIGHT);
 
-  // mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj");
-  mesh CubeMesh = LoadMeshFromObjFile("./assets/f22.obj");
+  mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj");
+  // mesh CubeMesh = LoadMeshFromObjFile("./assets/f22.obj");
 #define CUBE_VERTICES_COUNT 8
   v3 CubeVertices[CUBE_VERTICES_COUNT] = {
     { -1.0f, -1.0f, -1.0f }, // 1
@@ -255,6 +264,24 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
         if(Event.key.keysym.sym == SDLK_ESCAPE) {
           AppRunning = false;
         }
+        if(Event.key.keysym.sym == SDLK_1) {
+          RenderMode = WIREFRAME | VERTICES;
+        }
+        if(Event.key.keysym.sym == SDLK_2) {
+          RenderMode = WIREFRAME;
+        }
+        if(Event.key.keysym.sym == SDLK_3) {
+          RenderMode = FILLED;
+        }
+        if(Event.key.keysym.sym == SDLK_4) {
+          RenderMode = FILLED | WIREFRAME;
+        }
+        if(Event.key.keysym.sym == SDLK_c) {
+          BackFaceCull = true;
+        }
+        if(Event.key.keysym.sym == SDLK_d) {
+          BackFaceCull = false;
+        }
       } break;
     }
 
@@ -281,21 +308,23 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
       }
 
       // Backface Culling
-      v3 FaceVertA = FaceVerts[1];
-      v3 FaceVertB = FaceVerts[0];
-      v3 FaceVertC = FaceVerts[2];
-      v3 VectorBA = FaceVertB - FaceVertA;
-      v3 VectorCA = FaceVertC - FaceVertA;
-      V3Normalize(&VectorBA);
-      V3Normalize(&VectorCA);
-      v3 FaceNormal = CrossProduct(VectorBA, VectorCA);
-      V3Normalize(&FaceNormal);
-      // v3 FaceNormal = CrossProduct(VectorCA, VectorBA);
-      v3 CameraRay = CameraPos - FaceVertA;
-      // v3 CameraRay = FaceVertA - CameraPos;
+      if (BackFaceCull) {
+        v3 FaceVertA = FaceVerts[1];
+        v3 FaceVertB = FaceVerts[0];
+        v3 FaceVertC = FaceVerts[2];
+        v3 VectorBA = FaceVertB - FaceVertA;
+        v3 VectorCA = FaceVertC - FaceVertA;
+        V3Normalize(&VectorBA);
+        V3Normalize(&VectorCA);
+        v3 FaceNormal = CrossProduct(VectorBA, VectorCA);
+        V3Normalize(&FaceNormal);
+        // v3 FaceNormal = CrossProduct(VectorCA, VectorBA);
+        v3 CameraRay = CameraPos - FaceVertA;
+        // v3 CameraRay = FaceVertA - CameraPos;
 
-      // The DotProduct IS commutative!
-      if (DotProduct(FaceNormal, CameraRay) <= 0) continue; // Skip projecting the vertices of this face as they are not visible
+        // The DotProduct IS commutative!
+        if (DotProduct(FaceNormal, CameraRay) <= 0) continue; // Skip projecting the vertices of this face as they are not visible
+      }
 
       triangle CurrentTriangle = {0};
       // Projection work on each vertex of triangle
@@ -331,14 +360,27 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
     // Triangle vertices for each face of the mesh
     // At this stage, there are multiple overdraws of the vertices
-    for (i32 i = 0; i < array_length(Triangles); ++i) {
-      DrawFilledTriangle(ColorBuff, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y,
-                         (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y,
-                         (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y,
-                         0xFFCCCCCC);
-      DrawLine(ColorBuff, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, 0xFF66B266);
-      DrawLine(ColorBuff, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, 0xFF66B266);
-      DrawLine(ColorBuff, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, 0xFF66B266);
+    if (RenderMode & FILLED) {
+      for (i32 i = 0; i < array_length(Triangles); ++i) {
+        DrawFilledTriangle(ColorBuff, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y,
+                           (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y,
+                           (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y,
+                           0xFFFFFFFF);
+      }
+    }
+    if (RenderMode & WIREFRAME) {
+      for (i32 i = 0; i < array_length(Triangles); ++i) {
+        DrawLine(ColorBuff, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, 0xFF00FF00);
+        DrawLine(ColorBuff, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, 0xFF00FF00);
+        DrawLine(ColorBuff, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, 0xFF00FF00);
+      }
+    }
+    if (RenderMode & VERTICES) {
+      for (i32 i = 0; i < array_length(Triangles); ++i) {
+        DrawRect(ColorBuff, (u32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, 4, 4, 0xFFFF0000);
+        DrawRect(ColorBuff, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, 4, 4, 0xFFFF0000);
+        DrawRect(ColorBuff, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, 4, 4, 0xFFFF0000);
+      }
     }
 
     SDL_UpdateTexture(CBTexture, 0, ColorBuff, (int)(WIN_WIDTH*sizeof(u32)));
