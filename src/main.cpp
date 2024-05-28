@@ -42,35 +42,6 @@ void BubbleSortTrianlges(triangle *triangles) {
   }
 }
 
-// TODO: Try out these with turns?
-static v3 V3RotateX(v3 InitialVector, f32 Angle) {
-  v3 Result = {
-    InitialVector.x,
-    InitialVector.y*cosf(Angle) - InitialVector.z*sinf(Angle),
-    InitialVector.z*cosf(Angle) + InitialVector.y*sinf(Angle)
-  };
-
-  return Result;
-}
-static v3 V3RotateY(v3 InitialVector, f32 Angle) {
-  v3 Result = {
-    InitialVector.x*cosf(Angle) - InitialVector.z*sinf(Angle),
-    InitialVector.y,
-    InitialVector.z*cosf(Angle) + InitialVector.x*sinf(Angle)
-  };
-
-  return Result;
-}
-static v3 V3RotateZ(v3 InitialVector, f32 Angle) {
-  v3 Result = {
-    InitialVector.x*cosf(Angle) - InitialVector.y*sinf(Angle),
-    InitialVector.y*cosf(Angle) + InitialVector.x*sinf(Angle),
-    InitialVector.z
-  };
-
-  return Result;
-}
-
 // Draw Funcs
 static void DrawLine(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1, u32 Color) {
   i32 DeltaX = x1 - x0;
@@ -173,8 +144,9 @@ static void DrawFilledTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1,
 }
 
 static void DrawRect(u32 *ColorBuffer, u32 x, u32 y, u32 w, u32 h, u32 Color) {
-  neo_assert(x >= 0 && x + w <= WIN_WIDTH);
-  neo_assert(y >= 0 && y + h <= WIN_HEIGHT);
+  if (!(x >= 0 && x + w <= WIN_WIDTH) && !(y >= 0 && y + h <= WIN_HEIGHT)) {
+    return;
+  }
 
   for (u32 RectRow = y; RectRow < (y + h); ++RectRow) {
     for (u32 RectCol = x; RectCol < (x + w); ++RectCol) {
@@ -265,6 +237,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
   // Mesh.vertices = CubeMesh.vertices;
   // Mesh.faces = CubeMesh.faces;
+  Mesh.scale = { 1.0f, 1.0f, 1.0f };
 
   AppRunning = true;
   while (AppRunning) {
@@ -303,9 +276,20 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
     // UPDATE
 
+    // Mesh.scale.x += 0.002f;
+
     Mesh.rotation.x += 0.01f;
     Mesh.rotation.y += 0.01f;
-    // Mesh.rotation.z += 0.01f;
+    Mesh.rotation.z += 0.01f;
+
+    // Mesh.translation.x += 0.01f;
+    Mesh.translation.z = 5.0f;
+
+    mat4 ScaleMatrix = Mat4Scale(Mesh.scale.x, Mesh.scale.y, Mesh.scale.z);
+    mat4 XRotationMatrix = Mat4RotateX(Mesh.rotation.x);
+    mat4 YRotationMatrix = Mat4RotateY(Mesh.rotation.y);
+    mat4 ZRotationMatrix = Mat4RotateZ(Mesh.rotation.z);
+    mat4 TranslateMatrix = Mat4Translate(Mesh.translation.x, Mesh.translation.y, Mesh.translation.z);
 
     Triangles = 0;
     for (i32 i = 0; i < array_length(Mesh.faces); ++i) {
@@ -317,10 +301,15 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
       // Transform work
       for (u32 j = 0; j < arr_count(FaceVerts); ++j) {
-        v3 NewVert = V3RotateX(FaceVerts[j], Mesh.rotation.x);
-        NewVert = V3RotateY(NewVert, Mesh.rotation.y);
-        NewVert.z += 5.0f;
-        FaceVerts[j] = NewVert;
+        v4 NewVert = V3ToV4(FaceVerts[j]);
+        NewVert = Mat4MultV4(ScaleMatrix, NewVert);
+
+        NewVert = Mat4MultV4(XRotationMatrix, NewVert);
+        NewVert = Mat4MultV4(YRotationMatrix, NewVert);
+        NewVert = Mat4MultV4(ZRotationMatrix, NewVert);
+
+        NewVert = Mat4MultV4(TranslateMatrix, NewVert);
+        FaceVerts[j] = V3FromV4(NewVert);
       }
 
       // Backface Culling

@@ -230,3 +230,212 @@ inline void V3Normalize(v3 *Vector) {
   Vector->z = Vector->z / VectorLength;
 }
 
+// TODO: Try out these with turns?
+v3 V3RotateX(v3 InitialVector, f32 Angle) {
+  v3 Result = {
+    InitialVector.x,
+    InitialVector.y*cosf(Angle) - InitialVector.z*sinf(Angle),
+    InitialVector.z*cosf(Angle) + InitialVector.y*sinf(Angle)
+  };
+
+  return Result;
+}
+v3 V3RotateY(v3 InitialVector, f32 Angle) {
+  v3 Result = {
+    InitialVector.x*cosf(Angle) - InitialVector.z*sinf(Angle),
+    InitialVector.y,
+    InitialVector.z*cosf(Angle) + InitialVector.x*sinf(Angle)
+  };
+
+  return Result;
+}
+v3 V3RotateZ(v3 InitialVector, f32 Angle) {
+  v3 Result = {
+    InitialVector.x*cosf(Angle) - InitialVector.y*sinf(Angle),
+    InitialVector.y*cosf(Angle) + InitialVector.x*sinf(Angle),
+    InitialVector.z
+  };
+
+  return Result;
+}
+
+// V4
+inline v4 V4(f32 x, f32 y, f32 z, f32 w)
+{
+  v4 result;
+  result.x = x;
+  result.y = y;
+  result.z = z;
+  result.w = w;
+  return result;
+}
+
+// Vector Casting
+inline v4 V3ToV4(v3 Vector) {
+  v4 Result = {0};
+  Result.x = Vector.x;
+  Result.y = Vector.y;
+  Result.z = Vector.z;
+  Result.w = 1.0f;
+  return Result;
+}
+
+inline v3 V3FromV4(v4 Vector) {
+  v3 Result = {0};
+  Result.x = Vector.x;
+  Result.y = Vector.y;
+  Result.z = Vector.z;
+  return Result;
+}
+
+// Matrices
+union mat4
+{
+  struct {
+    f32 m0,  m1,  m2,  m3;
+    f32 m4,  m5,  m6,  m7;
+    f32 m8,  m9,  m10, m11;
+    f32 m12, m13, m14, m15;
+  };
+
+  f32 e[16];
+};
+
+inline mat4 Mat4Iden()
+{
+  mat4 Result = {
+    1.0f, 0.0f, 0.0f, 0.0f,
+    0.0f, 1.0f, 0.0f, 0.0f,
+    0.0f, 0.0f, 1.0f, 0.0f,
+    0.0f, 0.0f, 0.0f, 1.0f
+  };
+
+  return Result;
+}
+
+inline mat4 Mat4Multiply(mat4 Left, mat4 Right)
+{
+  mat4 Result = {};
+
+  Result.m0 =  Left.m0*Right.m0 + Left.m1*Right.m4 + Left.m2*Right.m8 + Left.m3*Right.m12;
+  Result.m1 =  Left.m0*Right.m1 + Left.m1*Right.m5 + Left.m2*Right.m9 + Left.m3*Right.m13;
+  Result.m2 =  Left.m0*Right.m2 + Left.m1*Right.m6 + Left.m2*Right.m10 + Left.m3*Right.m14;
+  Result.m3 =  Left.m0*Right.m3 + Left.m1*Right.m7 + Left.m2*Right.m11 + Left.m3*Right.m15;
+  Result.m4 =  Left.m4*Right.m0 + Left.m5*Right.m4 + Left.m6*Right.m8 + Left.m7*Right.m12;
+  Result.m5 =  Left.m4*Right.m1 + Left.m5*Right.m5 + Left.m6*Right.m9 + Left.m7*Right.m13;
+  Result.m6 =  Left.m4*Right.m2 + Left.m5*Right.m6 + Left.m6*Right.m10 + Left.m7*Right.m14;
+  Result.m7 =  Left.m4*Right.m3 + Left.m5*Right.m7 + Left.m6*Right.m11 + Left.m7*Right.m15;
+  Result.m8 =  Left.m8*Right.m0 + Left.m9*Right.m4 + Left.m10*Right.m8 + Left.m11*Right.m12;
+  Result.m9 =  Left.m8*Right.m1 + Left.m9*Right.m5 + Left.m10*Right.m9 + Left.m11*Right.m13;
+  Result.m10 = Left.m8*Right.m2 + Left.m9*Right.m6 + Left.m10*Right.m10 + Left.m11*Right.m14;
+  Result.m11 = Left.m8*Right.m3 + Left.m9*Right.m7 + Left.m10*Right.m11 + Left.m11*Right.m15;
+  Result.m12 = Left.m12*Right.m0 + Left.m13*Right.m4 + Left.m14*Right.m8 + Left.m15*Right.m12;
+  Result.m13 = Left.m12*Right.m1 + Left.m13*Right.m5 + Left.m14*Right.m9 + Left.m15*Right.m13;
+  Result.m14 = Left.m12*Right.m2 + Left.m13*Right.m6 + Left.m14*Right.m10 + Left.m15*Right.m14;
+  Result.m15 = Left.m12*Right.m3 + Left.m13*Right.m7 + Left.m14*Right.m11 + Left.m15*Right.m15;
+
+  return Result;
+}
+
+inline mat4 operator*(mat4 Left, mat4 Right)
+{
+  mat4 Result = {0};
+  Result = Mat4Multiply(Left, Right);
+
+  return Result;
+}
+
+inline mat4 Mat4Translate(f32 x, f32 y, f32 z)
+{
+  mat4 Result = {
+    1.0f, 0.0f, 0.0f, x,
+    0.0f, 1.0f, 0.0f, y,
+    0.0f, 0.0f, 1.0f, z,
+    0.0f, 0.0f, 0.0f, 1.0f
+  };
+
+  return Result;
+}
+
+inline mat4 Mat4Scale(f32 x, f32 y, f32 z)
+{
+  mat4 Result = {
+    x, 0.0f, 0.0f, 0.0f,
+    0.0f, y, 0.0f, 0.0f,
+    0.0f, 0.0f, z, 0.0f,
+    0.0f, 0.0f, 0.0f, 1.0f
+  };
+
+  return Result;
+}
+
+inline mat4 Mat4RotateX(f32 Angle)
+{
+  mat4 Result = {
+    1.0f,   0.0f,        0.0f,         0.0f,
+    0.0f,   cosf(Angle), -sinf(Angle), 0.0f,
+    0.0f,   sinf(Angle), cosf(Angle),  0.0f,
+    0.0f,   0.0f,        0.0f,         1.0f
+  };
+
+  return Result;
+}
+
+inline mat4 Mat4RotateY(f32 Angle)
+{
+  mat4 Result = {
+    cosf(Angle),  0.0f, sinf(Angle), 0.0f,
+    0.0f,         1.0f, 0.0f,        0.0f,
+    -sinf(Angle), 0.0f, cosf(Angle), 0.0f,
+    0.0f,         0.0f, 0.0f,        1.0f
+  };
+
+  return Result;
+}
+
+inline mat4 Mat4RotateZ(f32 Angle)
+{
+  mat4 Result = {
+    cosf(Angle), -sinf(Angle), 0.0f, 0.0f,
+    sinf(Angle), cosf(Angle),  0.0f, 0.0f,
+    0.0f,        0.0f,         1.0f, 0.0f,
+    0.0f,        0.0f,         0.0f, 1.0f
+  };
+
+  return Result;
+}
+
+inline mat4 Mat4Ortho(f32 Left, f32 Right, f32 Top, f32 Bottom, f32 NearP, f32 FarP)
+{
+  f32 RlRange = Right - Left;
+  f32 TbRange = Top - Bottom;
+  f32 FnRange = FarP - NearP;
+
+  // NOTE: This is colunm-major(OGL inforced); which means the rows in these map to columns in math notation.
+  mat4 Result = {
+    (2.0f/RlRange),              0.0f,                         0.0f,                       0.0f,
+    0.0f,                         (2.0f/TbRange),              0.0f,                       0.0f,
+    0.0f,                         0.0f,                         (-2.0f/FnRange),           0.0f,
+    -((Right + Left)/(RlRange)), -((Top + Bottom)/(TbRange)), -((FarP + NearP)/(FnRange)), 1.0f
+  };
+
+  return Result;
+}
+
+// Mixed Funcs
+inline v4 Mat4MultV4(mat4 Matrix, v4 Vector) {
+  v4 Result = {0};
+  Result.x = (Matrix.m0*Vector.x) + (Matrix.m1*Vector.y) + (Matrix.m2*Vector.z) + (Matrix.m3*Vector.w);
+  Result.y = (Matrix.m4*Vector.x) + (Matrix.m5*Vector.y) + (Matrix.m6*Vector.z) + (Matrix.m7*Vector.w);
+  Result.z = (Matrix.m8*Vector.x) + (Matrix.m9*Vector.y) + (Matrix.m10*Vector.z) + (Matrix.m11*Vector.w);
+  Result.w = (Matrix.m12*Vector.x) + (Matrix.m13*Vector.y) + (Matrix.m14*Vector.z) + (Matrix.m15*Vector.w);
+  return Result;
+}
+
+inline v4 operator*(mat4 Left, v4 Right)
+{
+  v4 Result = {0};
+  Result = Mat4MultV4(Left, Right);
+  return Result;
+}
+

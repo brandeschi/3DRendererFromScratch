@@ -16,7 +16,9 @@ struct triangle {
 struct mesh {
   v3 *vertices;
   face_index *faces;
+  v3 scale;
   v3 rotation;
+  v3 translation;
 };
 
 static mesh LoadMeshFromObjFile(char *FileName);

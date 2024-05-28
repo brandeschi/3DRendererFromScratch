@@ -21,6 +21,7 @@ typedef uint32_t u32;
 typedef uint64_t u64;
 
 typedef size_t mem_index;
+typedef mem_index ums;
 
 typedef float f32;
 typedef double f64;
