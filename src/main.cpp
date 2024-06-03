@@ -238,6 +238,10 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
   // Mesh.vertices = CubeMesh.vertices;
   // Mesh.faces = CubeMesh.faces;
   Mesh.scale = { 1.0f, 1.0f, 1.0f };
+  f32 FOV = PI32 / 3.0f;
+  f32 ZNear = 0.1f;
+  f32 ZFar = 100.0f;
+  mat4 ProjectionMatrix = Mat4Projection(((f32)WIN_HEIGHT / (f32)WIN_WIDTH), FOV, ZNear, ZFar);
 
   AppRunning = true;
   while (AppRunning) {
@@ -278,7 +282,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
     // Mesh.scale.x += 0.002f;
 
-    Mesh.rotation.x += 0.01f;
+    Mesh.rotation.x += 0.02f;
     // Mesh.rotation.y += 0.01f;
     // Mesh.rotation.z += 0.01f;
 
@@ -329,10 +333,20 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
       triangle CurrentTriangle = {0};
       // Projection work on each vertex of triangle
       for (u32 j = 0; j < arr_count(FaceVerts); ++j) {
-        v2 ProjectedPoint = { (FaceVerts[j].x*FOV_FACTOR) / FaceVerts[j].z, (FaceVerts[j].y*FOV_FACTOR) / FaceVerts[j].z };
+        v4 ProjectedPoint = Mat4MultV4(ProjectionMatrix, V3ToV4(FaceVerts[j]));
+        // Perspective divide
+        if (ProjectedPoint.w != 0) {
+          ProjectedPoint.x /= ProjectedPoint.w;
+          ProjectedPoint.y /= ProjectedPoint.w;
+          ProjectedPoint.z /= ProjectedPoint.w;
+        }
+
+        ProjectedPoint.x *= (f32)(WIN_WIDTH / 2);
+        ProjectedPoint.y *= (f32)(WIN_HEIGHT / 2);
+
         ProjectedPoint.x += (f32)(WIN_WIDTH / 2);
         ProjectedPoint.y += (f32)(WIN_HEIGHT / 2);
-        CurrentTriangle.vertices[j] = ProjectedPoint;
+        CurrentTriangle.vertices[j] = V2(ProjectedPoint.x, ProjectedPoint.y);
       }
 
       CurrentTriangle.color = Mesh.faces[i].color;

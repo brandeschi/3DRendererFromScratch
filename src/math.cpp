@@ -429,6 +429,19 @@ inline mat4 Mat4Ortho(f32 Left, f32 Right, f32 Top, f32 Bottom, f32 NearP, f32 F
   return Result;
 }
 
+inline mat4 Mat4Projection(f32 AspectRatio, f32 FOV, f32 ZNear, f32 ZFar)
+{
+  f32 FOVFunc = (1.0f / tanf((FOV / 2.0f)));
+  f32 NormRatio = (ZFar / (ZFar - ZNear));
+  mat4 Result = {
+    AspectRatio*FOVFunc, 0.0f,    0.0f,      0.0f,
+    0.0f,                FOVFunc, 0.0f,      0.0f,
+    0.0f,                0.0f,    NormRatio, -NormRatio*ZNear,
+    0.0f,                0.0f,    1.0f,      0.0f
+  };
+  return Result;
+}
+
 // Mixed Funcs
 inline v4 Mat4MultV4(mat4 Matrix, v4 Vector) {
   v4 Result = {0};
