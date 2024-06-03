@@ -279,8 +279,8 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     // Mesh.scale.x += 0.002f;
 
     Mesh.rotation.x += 0.01f;
-    Mesh.rotation.y += 0.01f;
-    Mesh.rotation.z += 0.01f;
+    // Mesh.rotation.y += 0.01f;
+    // Mesh.rotation.z += 0.01f;
 
     // Mesh.translation.x += 0.01f;
     Mesh.translation.z = 5.0f;
@@ -302,13 +302,10 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
       // Transform work
       for (u32 j = 0; j < arr_count(FaceVerts); ++j) {
         v4 NewVert = V3ToV4(FaceVerts[j]);
-        NewVert = Mat4MultV4(ScaleMatrix, NewVert);
-
-        NewVert = Mat4MultV4(XRotationMatrix, NewVert);
-        NewVert = Mat4MultV4(YRotationMatrix, NewVert);
-        NewVert = Mat4MultV4(ZRotationMatrix, NewVert);
-
-        NewVert = Mat4MultV4(TranslateMatrix, NewVert);
+        // ORDER MATTERS!!!!! the below is really S*R*T
+        // Builds like XRot*Scale -> YRot*(XRot*Scale) -> ZRot*(YRot*XRot*Scale) -> Translate*(ZRot*YRot*XRot*Scale)
+        mat4 WorldMatrix = TranslateMatrix*ZRotationMatrix*YRotationMatrix*XRotationMatrix*ScaleMatrix;
+        NewVert = Mat4MultV4(WorldMatrix, NewVert);
         FaceVerts[j] = V3FromV4(NewVert);
       }
 

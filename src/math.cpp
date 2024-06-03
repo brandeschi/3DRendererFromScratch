@@ -345,6 +345,12 @@ inline mat4 operator*(mat4 Left, mat4 Right)
   return Result;
 }
 
+inline mat4 &operator*=(mat4 &a, mat4 b)
+{
+    a = a*b;
+    return a;
+}
+
 inline mat4 Mat4Translate(f32 x, f32 y, f32 z)
 {
   mat4 Result = {
