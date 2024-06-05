@@ -1,5 +1,23 @@
 #include "main.unity.h"
 
+struct light {
+  v3 direction;
+};
+
+inline u32 ColorFromLightIntensity(u32 Color, f32 Percentage) {
+  // TODO: SafeTruncate??
+  if (Percentage < 0.0f) Percentage = 0.0f;
+  if (Percentage > 1.0f) Percentage = 1.0f;
+
+  u32 A = (Color & 0xFF000000);
+  u32 R = (u32)(((f32)(Color & 0x00FF0000))*Percentage);
+  u32 G = (u32)(((f32)(Color & 0x0000FF00))*Percentage);
+  u32 B = (u32)(((f32)(Color & 0x000000FF))*Percentage);
+
+  u32 NewColor = A | (R & 0x00FF0000) | (G & 0x0000FF00) | (B & 0x000000FF);
+  return NewColor;
+}
+
 triangle *Triangles = 0;
 global mesh Mesh = {0};
 
@@ -53,7 +71,7 @@ static void DrawLine(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1, u32 Color
 
   f32 CurrentX = (f32)x0;
   f32 CurrentY = (f32)y0;
-  for (i32 i = 0; i < SideLength; ++i) {
+  for (i32 i = 0; i <= SideLength; ++i) {
     ColorBuffer[(WIN_WIDTH*(u32)roundf(CurrentY)) + (u32)roundf(CurrentX)] = Color;
     CurrentX += XIncrement;
     CurrentY += YIncrement;
@@ -213,17 +231,17 @@ int main(int argc, char** argv) {
 #define CUBE_FACE_COUNT (6 * 2) // 6 faces; 2 triangles per face
 face_index CubeFaces[CUBE_FACE_COUNT] = {
   // front
-  { 1, 2, 3, 0xFFAA1111 }, { 1, 3, 4, 0xFFAA1111 },
+  { 1, 2, 3, 0xFFFFFFFF }, { 1, 3, 4, 0xFFFFFFFF },
   // right
-  { 4, 3, 5, 0xFF11AA11 }, { 4, 5, 6, 0xFF11AA11 },
+  { 4, 3, 5, 0xFFFFFFFF }, { 4, 5, 6, 0xFFFFFFFF },
   // back
-  { 6, 5, 7, 0xFF0000FF }, { 6, 7, 8, 0xFF0000FF },
+  { 6, 5, 7, 0xFFFFFFFF }, { 6, 7, 8, 0xFFFFFFFF },
   // left
-  { 8, 7, 2, 0xFFFF00FF }, { 8, 2, 1, 0xFFFF00FF },
+  { 8, 7, 2, 0xFFFFFFFF }, { 8, 2, 1, 0xFFFFFFFF },
   // top
-  { 2, 7, 5, 0xFFFFFF00 }, { 2, 5, 3, 0xFFFFFF00 },
+  { 2, 7, 5, 0xFFFFFFFF }, { 2, 5, 3, 0xFFFFFFFF },
   // bottom
-  { 6, 8, 1, 0xFFFFAAAA }, { 6, 1, 4, 0xFFFFAAAA }
+  { 6, 8, 1, 0xFFFFFFFF }, { 6, 1, 4, 0xFFFFFFFF }
 };
 
   v3 CameraPos = { 0.0f, 0.0f, 0.0f };
@@ -242,6 +260,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
   f32 ZNear = 0.1f;
   f32 ZFar = 100.0f;
   mat4 ProjectionMatrix = Mat4Projection(((f32)WIN_HEIGHT / (f32)WIN_WIDTH), FOV, ZNear, ZFar);
+  light GLight = { 0.0f, 0.0f, 1.0f };
 
   AppRunning = true;
   while (AppRunning) {
@@ -283,8 +302,8 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     // Mesh.scale.x += 0.002f;
 
     Mesh.rotation.x += 0.02f;
-    // Mesh.rotation.y += 0.01f;
-    // Mesh.rotation.z += 0.01f;
+    Mesh.rotation.y += 0.02f;
+    Mesh.rotation.z += 0.02f;
 
     // Mesh.translation.x += 0.01f;
     Mesh.translation.z = 5.0f;
@@ -313,8 +332,6 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
         FaceVerts[j] = V3FromV4(NewVert);
       }
 
-      // Backface Culling
-      if (BackFaceCull) {
         v3 FaceVertA = FaceVerts[0];
         v3 FaceVertB = FaceVerts[1];
         v3 FaceVertC = FaceVerts[2];
@@ -324,8 +341,10 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
         V3Normalize(&VectorCA);
         v3 FaceNormal = CrossProduct(VectorBA, VectorCA);
         V3Normalize(&FaceNormal);
-        v3 CameraRay = CameraPos - FaceVertA;
 
+      // Backface Culling
+      if (BackFaceCull) {
+        v3 CameraRay = CameraPos - FaceVertA;
         // The DotProduct IS commutative!
         if (DotProduct(FaceNormal, CameraRay) <= 0) continue; // Skip projecting the vertices of this face as they are not visible
       }
@@ -349,7 +368,8 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
         CurrentTriangle.vertices[j] = V2(ProjectedPoint.x, ProjectedPoint.y);
       }
 
-      CurrentTriangle.color = Mesh.faces[i].color;
+      f32 AlignmentPercentage = -DotProduct(FaceNormal, GLight.direction);
+      CurrentTriangle.color = ColorFromLightIntensity(Mesh.faces[i].color, AlignmentPercentage);
       CurrentTriangle.avg_depth = (FaceVerts[0].z + FaceVerts[1].z + FaceVerts[2].z) / 3.0f;
       array_push(Triangles, triangle, CurrentTriangle);
     }
