@@ -214,8 +214,8 @@ int main(int argc, char** argv) {
   }
   SDL_Texture *CBTexture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIN_WIDTH, WIN_HEIGHT);
 
-  mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj");
-  // mesh CubeMesh = LoadMeshFromObjFile("./assets/f22.obj");
+  // mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj");
+  mesh F22Mesh = LoadMeshFromObjFile("./assets/f22.obj");
 #define CUBE_VERTICES_COUNT 8
   v3 CubeVertices[CUBE_VERTICES_COUNT] = {
     { -1.0f, -1.0f, -1.0f }, // 1
@@ -253,8 +253,8 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     array_push(Mesh.faces, face_index, CubeFaces[i]);
   }
 
-  // Mesh.vertices = CubeMesh.vertices;
-  // Mesh.faces = CubeMesh.faces;
+  Mesh.vertices = F22Mesh.vertices;
+  Mesh.faces = F22Mesh.faces;
   Mesh.scale = { 1.0f, 1.0f, 1.0f };
   f32 FOV = PI32 / 3.0f;
   f32 ZNear = 0.1f;
@@ -302,8 +302,8 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     // Mesh.scale.x += 0.002f;
 
     Mesh.rotation.x += 0.02f;
-    Mesh.rotation.y += 0.02f;
-    Mesh.rotation.z += 0.02f;
+    // Mesh.rotation.y += 0.02f;
+    // Mesh.rotation.z += 0.02f;
 
     // Mesh.translation.x += 0.01f;
     Mesh.translation.z = 5.0f;
@@ -332,15 +332,18 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
         FaceVerts[j] = V3FromV4(NewVert);
       }
 
-        v3 FaceVertA = FaceVerts[0];
-        v3 FaceVertB = FaceVerts[1];
-        v3 FaceVertC = FaceVerts[2];
-        v3 VectorBA = FaceVertB - FaceVertA;
-        v3 VectorCA = FaceVertC - FaceVertA;
-        V3Normalize(&VectorBA);
-        V3Normalize(&VectorCA);
-        v3 FaceNormal = CrossProduct(VectorBA, VectorCA);
-        V3Normalize(&FaceNormal);
+
+      // TODO: Figure out why i need to swap A and B
+      // when using the f22 mesh
+      v3 FaceVertA = FaceVerts[1];
+      v3 FaceVertB = FaceVerts[0];
+      v3 FaceVertC = FaceVerts[2];
+      v3 VectorBA = FaceVertB - FaceVertA;
+      v3 VectorCA = FaceVertC - FaceVertA;
+      V3Normalize(&VectorBA);
+      V3Normalize(&VectorCA);
+      v3 FaceNormal = CrossProduct(VectorBA, VectorCA);
+      V3Normalize(&FaceNormal);
 
       // Backface Culling
       if (BackFaceCull) {

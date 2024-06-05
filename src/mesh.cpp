@@ -60,6 +60,8 @@ static mesh LoadMeshFromObjFile(char *FileName) {
             } else if (FaceIndex == 2) {
               Face.c = atoi(FaceIndexStr);
             }
+            ++FaceIndex;
+            Face.color = 0xFFFFFFFF;
             memset(FaceIndexStr, 0, 8);
             FISPtr = &FaceIndexStr[0];
           }
