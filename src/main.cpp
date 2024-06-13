@@ -255,6 +255,10 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
   Mesh.vertices = F22Mesh.vertices;
   Mesh.faces = F22Mesh.faces;
+
+  // Mesh.vertices = CubeMesh.vertices;
+  // Mesh.faces = CubeMesh.faces;
+
   Mesh.scale = { 1.0f, 1.0f, 1.0f };
   f32 FOV = PI32 / 3.0f;
   f32 ZNear = 0.1f;
@@ -335,14 +339,14 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
       // TODO: Figure out why i need to swap A and B
       // when using the f22 mesh
-      v3 FaceVertA = FaceVerts[1];
-      v3 FaceVertB = FaceVerts[0];
+      v3 FaceVertA = FaceVerts[0];
+      v3 FaceVertB = FaceVerts[1];
       v3 FaceVertC = FaceVerts[2];
       v3 VectorBA = FaceVertB - FaceVertA;
       v3 VectorCA = FaceVertC - FaceVertA;
       V3Normalize(&VectorBA);
       V3Normalize(&VectorCA);
-      v3 FaceNormal = CrossProduct(VectorBA, VectorCA);
+      v3 FaceNormal = CrossProduct(VectorCA, VectorBA);
       V3Normalize(&FaceNormal);
 
       // Backface Culling
