@@ -22,10 +22,12 @@ triangle *Triangles = 0;
 global mesh Mesh = {0};
 
 // Per bit option for rendering mode
+// TODO: Make this a composiable system using XOR?
 enum RenderModeEnum {
   WIREFRAME = 1 << 0,
   FILLED = 1 << 1,
-  VERTICES = 1 << 2
+  VERTICES = 1 << 2,
+  TEXTURED = 1 << 3,
 };
 
 global b32 AppRunning = false;
@@ -161,6 +163,9 @@ static void DrawFilledTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1,
   }
 }
 
+static void DrawTexturedTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1, i32 x2, i32 y2, u32 *texture, v2 *uvs) {
+}
+
 static void DrawRect(u32 *ColorBuffer, u32 x, u32 y, u32 w, u32 h, u32 Color) {
   if (!(x >= 0 && x + w <= WIN_WIDTH) && !(y >= 0 && y + h <= WIN_HEIGHT)) {
     return;
@@ -214,8 +219,8 @@ int main(int argc, char** argv) {
   }
   SDL_Texture *CBTexture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIN_WIDTH, WIN_HEIGHT);
 
-  // mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj");
-  mesh F22Mesh = LoadMeshFromObjFile("./assets/f22.obj");
+  mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj");
+  // mesh F22Mesh = LoadMeshFromObjFile("./assets/f22.obj");
 #define CUBE_VERTICES_COUNT 8
   v3 CubeVertices[CUBE_VERTICES_COUNT] = {
     { -1.0f, -1.0f, -1.0f }, // 1
@@ -231,17 +236,17 @@ int main(int argc, char** argv) {
 #define CUBE_FACE_COUNT (6 * 2) // 6 faces; 2 triangles per face
 face_index CubeFaces[CUBE_FACE_COUNT] = {
   // front
-  { 1, 2, 3, 0xFFFFFFFF }, { 1, 3, 4, 0xFFFFFFFF },
+  { 1, 2, 3, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF }, { 1, 3, 4, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF },
   // right
-  { 4, 3, 5, 0xFFFFFFFF }, { 4, 5, 6, 0xFFFFFFFF },
+  { 4, 3, 5, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF }, { 4, 5, 6, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF },
   // back
-  { 6, 5, 7, 0xFFFFFFFF }, { 6, 7, 8, 0xFFFFFFFF },
+  { 6, 5, 7, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF }, { 6, 7, 8, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF },
   // left
-  { 8, 7, 2, 0xFFFFFFFF }, { 8, 2, 1, 0xFFFFFFFF },
+  { 8, 7, 2, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF }, { 8, 2, 1, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF },
   // top
-  { 2, 7, 5, 0xFFFFFFFF }, { 2, 5, 3, 0xFFFFFFFF },
+  { 2, 7, 5, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF }, { 2, 5, 3, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF },
   // bottom
-  { 6, 8, 1, 0xFFFFFFFF }, { 6, 1, 4, 0xFFFFFFFF }
+  { 6, 8, 1, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF }, { 6, 1, 4, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF }
 };
 
   v3 CameraPos = { 0.0f, 0.0f, 0.0f };
@@ -253,11 +258,11 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     array_push(Mesh.faces, face_index, CubeFaces[i]);
   }
 
-  Mesh.vertices = F22Mesh.vertices;
-  Mesh.faces = F22Mesh.faces;
+  // Mesh.vertices = F22Mesh.vertices;
+  // Mesh.faces = F22Mesh.faces;
 
-  // Mesh.vertices = CubeMesh.vertices;
-  // Mesh.faces = CubeMesh.faces;
+  Mesh.vertices = CubeMesh.vertices;
+  Mesh.faces = CubeMesh.faces;
 
   Mesh.scale = { 1.0f, 1.0f, 1.0f };
   f32 FOV = PI32 / 3.0f;
@@ -282,6 +287,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
         }
         if(Event.key.keysym.sym == SDLK_1) {
           RenderMode = WIREFRAME | VERTICES;
+          RenderMode ^= WIREFRAME;
         }
         if(Event.key.keysym.sym == SDLK_2) {
           RenderMode = WIREFRAME;
@@ -291,6 +297,12 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
         }
         if(Event.key.keysym.sym == SDLK_4) {
           RenderMode = FILLED | WIREFRAME;
+        }
+        if(Event.key.keysym.sym == SDLK_5) {
+          RenderMode = TEXTURED;
+        }
+        if(Event.key.keysym.sym == SDLK_6) {
+          RenderMode = WIREFRAME | TEXTURED;
         }
         if(Event.key.keysym.sym == SDLK_c) {
           BackFaceCull = true;
@@ -336,9 +348,6 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
         FaceVerts[j] = V3FromV4(NewVert);
       }
 
-
-      // TODO: Figure out why i need to swap A and B
-      // when using the f22 mesh
       v3 FaceVertA = FaceVerts[0];
       v3 FaceVertB = FaceVerts[1];
       v3 FaceVertC = FaceVerts[2];
@@ -375,6 +384,9 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
         CurrentTriangle.vertices[j] = V2(ProjectedPoint.x, ProjectedPoint.y);
       }
 
+      CurrentTriangle.texture_coords[0] = { Mesh.faces[i].a_uv.u, Mesh.faces[i].a_uv.v };
+      CurrentTriangle.texture_coords[1] = { Mesh.faces[i].b_uv.u, Mesh.faces[i].b_uv.v };
+      CurrentTriangle.texture_coords[2] = { Mesh.faces[i].c_uv.u, Mesh.faces[i].c_uv.v };
       f32 AlignmentPercentage = -DotProduct(FaceNormal, GLight.direction);
       CurrentTriangle.color = ColorFromLightIntensity(Mesh.faces[i].color, AlignmentPercentage);
       CurrentTriangle.avg_depth = (FaceVerts[0].z + FaceVerts[1].z + FaceVerts[2].z) / 3.0f;
@@ -413,6 +425,15 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
                            (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y,
                            (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y,
                            Triangles[i].color);
+      }
+    }
+    if (RenderMode & TEXTURED) {
+      for (i32 i = 0; i < array_length(Triangles); ++i) {
+        DrawTexturedTriangle(ColorBuff, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y,
+                           (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y,
+                           (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y,
+                           MeshTexture,
+                           Triangles[i].texture_coords);
       }
     }
     if (RenderMode & WIREFRAME) {

@@ -34,4 +34,4 @@ typedef double f64;
 #include "math.cpp"
 #include "array.cpp"
 #include "mesh.cpp"
-
+#include "texture.cpp"

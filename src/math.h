@@ -7,6 +7,10 @@ union v2
   {
     f32 x, y;
   };
+  struct
+  {
+    f32 u, v;
+  };
   f32 e[2];
 };
 
