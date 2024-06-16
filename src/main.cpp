@@ -199,14 +199,14 @@ static void DrawTexturedTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y
 
   if (y1 - y0 != 0) {
     for (i32 row = y0; row <= y1; ++row) {
-      i32 StartX = x1 + (row - y1)*(i32)InvSlope1;
-      i32 EndX = x0 + (row - y0)*(i32)InvSlope2;
+      i32 StartX = (i32)(x1 + (row - y1)*InvSlope1);
+      i32 EndX = (i32)(x0 + (row - y0)*InvSlope2);
       if (EndX < StartX) {
         SwapI32(&StartX, &EndX);
       }
 
       for (i32 col = (i32)StartX; col < (i32)EndX; ++col) {
-        ColorBuffer[(WIN_WIDTH*row) + col] = 0xFFFF00FF;
+        ColorBuffer[(WIN_WIDTH*row) + col] = (row % 5 == 0 && col % 5 == 0) ? 0xFFFF00FF : 0xFF3A4253;
       }
     }
   }
@@ -220,14 +220,14 @@ static void DrawTexturedTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y
 
   if (y2 - y1 != 0) {
     for (i32 row = y1; row <= y2; ++row) {
-      i32 StartX = x1 + (row - y1)*(i32)InvSlope1;
-      i32 EndX = x0 + (row - y0)*(i32)InvSlope2;
+      i32 StartX = (i32)(x1 + (row - y1)*InvSlope1);
+      i32 EndX = (i32)(x0 + (row - y0)*InvSlope2);
       if (EndX < StartX) {
         SwapI32(&StartX, &EndX);
       }
 
       for (i32 col = (i32)StartX; col < (i32)EndX; ++col) {
-        ColorBuffer[(WIN_WIDTH*row) + col] = 0xFFFF00FF;
+        ColorBuffer[(WIN_WIDTH*row) + col] = (row % 5 == 0 && col % 5 == 0) ? 0xFFFF00FF : 0xFF3A4253;
       }
     }
   }
@@ -383,7 +383,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
     // Mesh.scale.x += 0.002f;
 
-    Mesh.rotation.x = 0.5f;
+    Mesh.rotation.x += 0.02f;
     // Mesh.rotation.y += 0.02f;
     // Mesh.rotation.z += 0.02f;
 
