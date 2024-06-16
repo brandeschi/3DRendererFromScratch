@@ -34,7 +34,7 @@ global b32 AppRunning = false;
 global u32 PrevFrameTime = 0;
 global i32 SyncTime = 0;
 global b32 BackFaceCull = true;
-global u32 RenderMode = WIREFRAME | VERTICES;
+global u32 RenderMode = FILLED;
 #define FPS 30
 #define TARGET_FRAME_TIME (1000 / FPS)
 global const u32 WIN_WIDTH = 1200;
@@ -43,6 +43,11 @@ global const f32 FOV_FACTOR = 640.0f;
 
 inline void SwapI32(i32 *a, i32 *b) {
   i32 temp = *a;
+  *a = *b;
+  *b = temp;
+}
+inline void SwapF32(f32 *a, f32 *b) {
+  f32 temp = *a;
   *a = *b;
   *b = temp;
 }
@@ -164,6 +169,68 @@ static void DrawFilledTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1,
 }
 
 static void DrawTexturedTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1, i32 x2, i32 y2, u32 *texture, v2 *uvs) {
+  // NOTE: This uses the Flat-top/Flat-bottom method
+  // Ensure y's are sorted with y0 being the smallest and y2 being the largest
+  if (y0 > y1) {
+    SwapI32(&y0, &y1);
+    SwapI32(&x0, &x1);
+    SwapF32(&uvs[0].v, &uvs[1].v);
+    SwapF32(&uvs[0].u, &uvs[1].u);
+  }
+  if (y1 > y2) {
+    SwapI32(&y1, &y2);
+    SwapI32(&x1, &x2);
+    SwapF32(&uvs[1].v, &uvs[2].v);
+    SwapF32(&uvs[1].u, &uvs[2].u);
+  }
+  if (y0 > y1) {
+    SwapI32(&y0, &y1);
+    SwapI32(&x0, &x1);
+    SwapF32(&uvs[0].v, &uvs[1].v);
+    SwapF32(&uvs[0].u, &uvs[1].u);
+  }
+
+  // Flat-Bottom
+  f32 InvSlope1 = 0.0f;
+  f32 InvSlope2 = 0.0f;
+
+  if (y1 - y0 != 0) InvSlope1 = (f32)(x1 - x0) / (f32)abs(y1 - y0);
+  if (y2 - y0 != 0) InvSlope2 = (f32)(x2 - x0) / (f32)abs(y2 - y0);
+
+  if (y1 - y0 != 0) {
+    for (i32 row = y0; row <= y1; ++row) {
+      i32 StartX = x1 + (row - y1)*(i32)InvSlope1;
+      i32 EndX = x0 + (row - y0)*(i32)InvSlope2;
+      if (EndX < StartX) {
+        SwapI32(&StartX, &EndX);
+      }
+
+      for (i32 col = (i32)StartX; col < (i32)EndX; ++col) {
+        ColorBuffer[(WIN_WIDTH*row) + col] = 0xFFFF00FF;
+      }
+    }
+  }
+
+  // Flat-Top
+  InvSlope1 = 0.0f;
+  InvSlope2 = 0.0f;
+
+  if (y2 - y1 != 0) InvSlope1 = (f32)(x2 - x1) / (f32)abs(y2 - y1);
+  if (y2 - y0 != 0) InvSlope2 = (f32)(x2 - x0) / (f32)abs(y2 - y0);
+
+  if (y2 - y1 != 0) {
+    for (i32 row = y1; row <= y2; ++row) {
+      i32 StartX = x1 + (row - y1)*(i32)InvSlope1;
+      i32 EndX = x0 + (row - y0)*(i32)InvSlope2;
+      if (EndX < StartX) {
+        SwapI32(&StartX, &EndX);
+      }
+
+      for (i32 col = (i32)StartX; col < (i32)EndX; ++col) {
+        ColorBuffer[(WIN_WIDTH*row) + col] = 0xFFFF00FF;
+      }
+    }
+  }
 }
 
 static void DrawRect(u32 *ColorBuffer, u32 x, u32 y, u32 w, u32 h, u32 Color) {
@@ -287,7 +354,6 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
         }
         if(Event.key.keysym.sym == SDLK_1) {
           RenderMode = WIREFRAME | VERTICES;
-          RenderMode ^= WIREFRAME;
         }
         if(Event.key.keysym.sym == SDLK_2) {
           RenderMode = WIREFRAME;
@@ -317,7 +383,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
     // Mesh.scale.x += 0.002f;
 
-    Mesh.rotation.x += 0.02f;
+    Mesh.rotation.x = 0.5f;
     // Mesh.rotation.y += 0.02f;
     // Mesh.rotation.z += 0.02f;
 
@@ -402,7 +468,6 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     // Clear
     for (u32 y = 0; y < WIN_HEIGHT; ++y) {
       for (u32 x = 0; x < WIN_WIDTH; ++x) {
-        // ColorBuff[(WIN_WIDTH * y) + x] = 0xFF616E8B;
         // Darker Background
         ColorBuff[(WIN_WIDTH * y) + x] = 0xFF3A4253;
       }
@@ -421,7 +486,8 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     // At this stage, there are multiple overdraws of the vertices
     if (RenderMode & FILLED) {
       for (i32 i = 0; i < array_length(Triangles); ++i) {
-        DrawFilledTriangle(ColorBuff, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y,
+        DrawFilledTriangle(ColorBuff,
+                           (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y,
                            (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y,
                            (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y,
                            Triangles[i].color);
@@ -429,11 +495,12 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     }
     if (RenderMode & TEXTURED) {
       for (i32 i = 0; i < array_length(Triangles); ++i) {
-        DrawTexturedTriangle(ColorBuff, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y,
-                           (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y,
-                           (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y,
-                           MeshTexture,
-                           Triangles[i].texture_coords);
+        DrawTexturedTriangle(ColorBuff,
+                             (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y,
+                             (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y,
+                             (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y,
+                             MeshTexture,
+                             Triangles[i].texture_coords);
       }
     }
     if (RenderMode & WIREFRAME) {
