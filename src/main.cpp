@@ -18,6 +18,25 @@ inline u32 ColorFromLightIntensity(u32 Color, f32 Percentage) {
   return NewColor;
 }
 
+v3 BarycentricWeights(v2 a, v2 b, v2 c, v2 p) {
+  v2 AB = b - a;
+  v2 AC = c - a;
+  v2 PC = c - p;
+  v2 PB = b - p;
+  v2 AP = p - a;
+
+  // f32 ParallelAreaABC = (a.x*b.y) - (a.y*b.x); // Length of the imaginary 'Z' component of the two 2-D vectors
+  // f32 Alpha = ((PC.x*PB.y) - (PC.y*PB.x)) / ParallelAreaABC;
+  // f32 Beta = ((AC.x*AP.y) - (AC.y*AP.x)) / ParallelAreaABC;
+  f32 ParallelAreaABC = (b.x*a.y) - (b.y*a.x); // Length of the imaginary 'Z' component of the two 2-D vectors
+  f32 Alpha = ((PB.x*PC.y) - (PB.y*PC.x)) / ParallelAreaABC;
+  f32 Beta = ((AP.x*AC.y) - (AP.y*AC.x)) / ParallelAreaABC;
+  f32 Gamma = 1.0f - Alpha - Beta;
+
+  v3 Weights = V3(Alpha, Beta, Gamma);
+  return Weights;
+}
+
 triangle *Triangles = 0;
 global mesh Mesh = {0};
 
@@ -168,6 +187,28 @@ static void DrawFilledTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1,
   }
 }
 
+static void DrawTexel(u32 *ColorBuffer,
+                      i32 x, i32 y,
+                      v2 VertexA, v2 VertexB, v2 VertexC,
+                      u32 *texture, v2 *uvs) {
+  // TODO: Debug the weights as we are getting values outside
+  // of the texture range (>64)
+  v3 Weights = BarycentricWeights(VertexA, VertexB, VertexC, V2((f32)x, (f32)y));
+
+  f32 InterpolatedU = (uvs[0].u*Weights.x) + (uvs[1].u*Weights.y) + (uvs[2].u*Weights.z);
+  f32 InterpolatedV = (uvs[0].v*Weights.x) + (uvs[1].v*Weights.y) + (uvs[2].v*Weights.z);
+
+  if (InterpolatedU > 1.0f) InterpolatedU = 1.0f;
+  if (InterpolatedV > 1.0f) InterpolatedV = 1.0f;
+
+  i32 TextureX = abs((i32)(InterpolatedU*TextureWidth));
+  i32 TextureY = abs((i32)(InterpolatedV*TextureHeight));
+
+  neo_assert(TextureX >= 0 && TextureX <= TextureWidth);
+  neo_assert(TextureY >= 0 && TextureY <= TextureHeight);
+  ColorBuffer[(WIN_WIDTH*y) + x] = texture[(TextureWidth*TextureY) + TextureX];
+}
+
 static void DrawTexturedTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1, i32 x2, i32 y2, u32 *texture, v2 *uvs) {
   // NOTE: This uses the Flat-top/Flat-bottom method
   // Ensure y's are sorted with y0 being the smallest and y2 being the largest
@@ -190,6 +231,10 @@ static void DrawTexturedTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y
     SwapF32(&uvs[0].u, &uvs[1].u);
   }
 
+  v2 VertexA = V2((f32)x0, (f32)y0);
+  v2 VertexB = V2((f32)x1, (f32)y1);
+  v2 VertexC = V2((f32)x2, (f32)y2);
+
   // Flat-Bottom
   f32 InvSlope1 = 0.0f;
   f32 InvSlope2 = 0.0f;
@@ -198,15 +243,16 @@ static void DrawTexturedTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y
   if (y2 - y0 != 0) InvSlope2 = (f32)(x2 - x0) / (f32)abs(y2 - y0);
 
   if (y1 - y0 != 0) {
-    for (i32 row = y0; row <= y1; ++row) {
-      i32 StartX = (i32)(x1 + (row - y1)*InvSlope1);
-      i32 EndX = (i32)(x0 + (row - y0)*InvSlope2);
+    for (i32 Row = y0; Row <= y1; ++Row) {
+      i32 StartX = (i32)(x1 + (Row - y1)*InvSlope1);
+      i32 EndX = (i32)(x0 + (Row - y0)*InvSlope2);
       if (EndX < StartX) {
         SwapI32(&StartX, &EndX);
       }
 
-      for (i32 col = (i32)StartX; col < (i32)EndX; ++col) {
-        ColorBuffer[(WIN_WIDTH*row) + col] = (row % 5 == 0 && col % 5 == 0) ? 0xFFFF00FF : 0xFF3A4253;
+      for (i32 Col = (i32)StartX; Col < (i32)EndX; ++Col) {
+        DrawTexel(ColorBuffer, Col, Row, VertexA, VertexB, VertexC, texture, uvs);
+        // ColorBuffer[(WIN_WIDTH*Row) + Col] = (Row % 5 == 0 && Col % 5 == 0) ? 0xFF00FFFF : 0xFF3A4253;
       }
     }
   }
@@ -219,15 +265,16 @@ static void DrawTexturedTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y
   if (y2 - y0 != 0) InvSlope2 = (f32)(x2 - x0) / (f32)abs(y2 - y0);
 
   if (y2 - y1 != 0) {
-    for (i32 row = y1; row <= y2; ++row) {
-      i32 StartX = (i32)(x1 + (row - y1)*InvSlope1);
-      i32 EndX = (i32)(x0 + (row - y0)*InvSlope2);
+    for (i32 Row = y1; Row <= y2; ++Row) {
+      i32 StartX = (i32)(x1 + (Row - y1)*InvSlope1);
+      i32 EndX = (i32)(x0 + (Row - y0)*InvSlope2);
       if (EndX < StartX) {
         SwapI32(&StartX, &EndX);
       }
 
-      for (i32 col = (i32)StartX; col < (i32)EndX; ++col) {
-        ColorBuffer[(WIN_WIDTH*row) + col] = (row % 5 == 0 && col % 5 == 0) ? 0xFFFF00FF : 0xFF3A4253;
+      for (i32 Col = (i32)StartX; Col < (i32)EndX; ++Col) {
+        DrawTexel(ColorBuffer, Col, Row, VertexA, VertexB, VertexC, texture, uvs);
+        // ColorBuffer[(WIN_WIDTH*Row) + Col] = (Row % 5 == 0 && Col % 5 == 0) ? 0xFFFF00FF : 0xFF3A4253;
       }
     }
   }
@@ -286,7 +333,7 @@ int main(int argc, char** argv) {
   }
   SDL_Texture *CBTexture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIN_WIDTH, WIN_HEIGHT);
 
-  mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj");
+  // mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj");
   // mesh F22Mesh = LoadMeshFromObjFile("./assets/f22.obj");
 #define CUBE_VERTICES_COUNT 8
   v3 CubeVertices[CUBE_VERTICES_COUNT] = {
@@ -303,17 +350,23 @@ int main(int argc, char** argv) {
 #define CUBE_FACE_COUNT (6 * 2) // 6 faces; 2 triangles per face
 face_index CubeFaces[CUBE_FACE_COUNT] = {
   // front
-  { 1, 2, 3, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF }, { 1, 3, 4, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF },
+  { 1, 2, 3, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF },
+  { 1, 3, 4, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF },
   // right
-  { 4, 3, 5, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF }, { 4, 5, 6, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF },
+  { 4, 3, 5, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF },
+  { 4, 5, 6, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF },
   // back
-  { 6, 5, 7, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF }, { 6, 7, 8, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF },
+  { 6, 5, 7, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF },
+  { 6, 7, 8, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF },
   // left
-  { 8, 7, 2, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF }, { 8, 2, 1, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF },
+  { 8, 7, 2, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF },
+  { 8, 2, 1, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF },
   // top
-  { 2, 7, 5, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF }, { 2, 5, 3, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF },
+  { 2, 7, 5, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF },
+  { 2, 5, 3, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF },
   // bottom
-  { 6, 8, 1, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF }, { 6, 1, 4, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF }
+  { 6, 8, 1, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF },
+  { 6, 1, 4, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF }
 };
 
   v3 CameraPos = { 0.0f, 0.0f, 0.0f };
@@ -328,8 +381,8 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
   // Mesh.vertices = F22Mesh.vertices;
   // Mesh.faces = F22Mesh.faces;
 
-  Mesh.vertices = CubeMesh.vertices;
-  Mesh.faces = CubeMesh.faces;
+  // Mesh.vertices = CubeMesh.vertices;
+  // Mesh.faces = CubeMesh.faces;
 
   Mesh.scale = { 1.0f, 1.0f, 1.0f };
   f32 FOV = PI32 / 3.0f;
@@ -421,7 +474,11 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
       v3 VectorCA = FaceVertC - FaceVertA;
       V3Normalize(&VectorBA);
       V3Normalize(&VectorCA);
-      v3 FaceNormal = CrossProduct(VectorCA, VectorBA);
+      // NOTE: For some reason, the cube loaded from the obj file
+      // needs the cross product to be one way, and the one from CubeVertices
+      // needs to be this way... not sure why they are different
+      // v3 FaceNormal = CrossProduct(VectorCA, VectorBA);
+      v3 FaceNormal = CrossProduct(VectorBA, VectorCA);
       V3Normalize(&FaceNormal);
 
       // Backface Culling
