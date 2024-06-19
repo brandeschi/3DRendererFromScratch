@@ -25,12 +25,9 @@ v3 BarycentricWeights(v2 a, v2 b, v2 c, v2 p) {
   v2 PB = b - p;
   v2 AP = p - a;
 
-  // f32 ParallelAreaABC = (a.x*b.y) - (a.y*b.x); // Length of the imaginary 'Z' component of the two 2-D vectors
-  // f32 Alpha = ((PC.x*PB.y) - (PC.y*PB.x)) / ParallelAreaABC;
-  // f32 Beta = ((AC.x*AP.y) - (AC.y*AP.x)) / ParallelAreaABC;
-  f32 ParallelAreaABC = (b.x*a.y) - (b.y*a.x); // Length of the imaginary 'Z' component of the two 2-D vectors
-  f32 Alpha = ((PB.x*PC.y) - (PB.y*PC.x)) / ParallelAreaABC;
-  f32 Beta = ((AP.x*AC.y) - (AP.y*AC.x)) / ParallelAreaABC;
+  f32 ParallelAreaABC = (AC.x*AB.y) - (AC.y*AB.x); // Length of the imaginary 'Z' component of the two 2-D vectors
+  f32 Alpha = ((PC.x*PB.y) - (PC.y*PB.x)) / ParallelAreaABC;
+  f32 Beta = ((AC.x*AP.y) - (AC.y*AP.x)) / ParallelAreaABC;
   f32 Gamma = 1.0f - Alpha - Beta;
 
   v3 Weights = V3(Alpha, Beta, Gamma);
@@ -190,23 +187,17 @@ static void DrawFilledTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1,
 static void DrawTexel(u32 *ColorBuffer,
                       i32 x, i32 y,
                       v2 VertexA, v2 VertexB, v2 VertexC,
-                      u32 *texture, v2 *uvs) {
-  // TODO: Debug the weights as we are getting values outside
-  // of the texture range (>64)
+                      u32 *Texture, v2 *uvs) {
   v3 Weights = BarycentricWeights(VertexA, VertexB, VertexC, V2((f32)x, (f32)y));
 
   f32 InterpolatedU = (uvs[0].u*Weights.x) + (uvs[1].u*Weights.y) + (uvs[2].u*Weights.z);
   f32 InterpolatedV = (uvs[0].v*Weights.x) + (uvs[1].v*Weights.y) + (uvs[2].v*Weights.z);
 
-  if (InterpolatedU > 1.0f) InterpolatedU = 1.0f;
-  if (InterpolatedV > 1.0f) InterpolatedV = 1.0f;
-
   i32 TextureX = abs((i32)(InterpolatedU*TextureWidth));
   i32 TextureY = abs((i32)(InterpolatedV*TextureHeight));
 
-  neo_assert(TextureX >= 0 && TextureX <= TextureWidth);
-  neo_assert(TextureY >= 0 && TextureY <= TextureHeight);
-  ColorBuffer[(WIN_WIDTH*y) + x] = texture[(TextureWidth*TextureY) + TextureX];
+  i32 TextureIndex = (((TextureWidth*TextureY) + TextureX) % (TextureWidth*TextureHeight));
+  ColorBuffer[(WIN_WIDTH*y) + x] = Texture[TextureIndex];
 }
 
 static void DrawTexturedTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1, i32 x2, i32 y2, u32 *texture, v2 *uvs) {
