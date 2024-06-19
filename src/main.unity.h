@@ -33,5 +33,6 @@ typedef double f64;
 // Sub TU
 #include "math.cpp"
 #include "array.cpp"
+#include "upng.cpp"
 #include "mesh.cpp"
 #include "texture.cpp"
