@@ -186,12 +186,24 @@ static void DrawFilledTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1,
 
 static void DrawTexel(u32 *ColorBuffer,
                       i32 x, i32 y,
-                      v2 VertexA, v2 VertexB, v2 VertexC,
+                      v4 VertexA, v4 VertexB, v4 VertexC,
                       u32 *Texture, v2 *uvs) {
-  v3 Weights = BarycentricWeights(VertexA, VertexB, VertexC, V2((f32)x, (f32)y));
+  v3 Weights = BarycentricWeights(V2(VertexA.x, VertexA.y),
+                                  V2(VertexB.x, VertexB.y),
+                                  V2(VertexC.x, VertexC.y),
+                                  V2((f32)x, (f32)y));
 
-  f32 InterpolatedU = (uvs[0].u*Weights.x) + (uvs[1].u*Weights.y) + (uvs[2].u*Weights.z);
-  f32 InterpolatedV = (uvs[0].v*Weights.x) + (uvs[1].v*Weights.y) + (uvs[2].v*Weights.z);
+  f32 InterpolatedU = ((uvs[0].u / VertexA.w)*Weights.x) +
+                       ((uvs[1].u / VertexB.w)*Weights.y) +
+                       ((uvs[2].u / VertexC.w)*Weights.z);
+  f32 InterpolatedV = ((uvs[0].v / VertexA.w)*Weights.x) +
+                       ((uvs[1].v / VertexB.w)*Weights.y) +
+                       ((uvs[2].v / VertexC.w)*Weights.z);
+  f32 InterpolatedReciprocalW = (1.0f / VertexA.w)*Weights.x +
+                                (1.0f / VertexB.w)*Weights.y +
+                                (1.0f / VertexC.w)*Weights.z;
+  InterpolatedU /= InterpolatedReciprocalW;
+  InterpolatedV /= InterpolatedReciprocalW;
 
   i32 TextureX = abs((i32)(InterpolatedU*TextureWidth));
   i32 TextureY = abs((i32)(InterpolatedV*TextureHeight));
@@ -200,31 +212,41 @@ static void DrawTexel(u32 *ColorBuffer,
   ColorBuffer[(WIN_WIDTH*y) + x] = Texture[TextureIndex];
 }
 
-static void DrawTexturedTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1, i32 x2, i32 y2, u32 *texture, v2 *uvs) {
+static void DrawTexturedTriangle(u32 *ColorBuffer,
+                                 i32 x0, i32 y0, f32 z0, f32 w0,
+                                 i32 x1, i32 y1, f32 z1, f32 w1,
+                                 i32 x2, i32 y2, f32 z2, f32 w2,
+                                 u32 *texture, v2 *uvs) {
   // NOTE: This uses the Flat-top/Flat-bottom method
   // Ensure y's are sorted with y0 being the smallest and y2 being the largest
   if (y0 > y1) {
-    SwapI32(&y0, &y1);
     SwapI32(&x0, &x1);
+    SwapI32(&y0, &y1);
+    SwapF32(&z0, &z1);
+    SwapF32(&w0, &w1);
     SwapF32(&uvs[0].v, &uvs[1].v);
     SwapF32(&uvs[0].u, &uvs[1].u);
   }
   if (y1 > y2) {
-    SwapI32(&y1, &y2);
     SwapI32(&x1, &x2);
+    SwapI32(&y1, &y2);
+    SwapF32(&z1, &z2);
+    SwapF32(&w1, &w2);
     SwapF32(&uvs[1].v, &uvs[2].v);
     SwapF32(&uvs[1].u, &uvs[2].u);
   }
   if (y0 > y1) {
-    SwapI32(&y0, &y1);
     SwapI32(&x0, &x1);
+    SwapI32(&y0, &y1);
+    SwapF32(&z0, &z1);
+    SwapF32(&w0, &w1);
     SwapF32(&uvs[0].v, &uvs[1].v);
     SwapF32(&uvs[0].u, &uvs[1].u);
   }
 
-  v2 VertexA = V2((f32)x0, (f32)y0);
-  v2 VertexB = V2((f32)x1, (f32)y1);
-  v2 VertexC = V2((f32)x2, (f32)y2);
+  v4 VertexA = V4((f32)x0, (f32)y0, z0, w0);
+  v4 VertexB = V4((f32)x1, (f32)y1, z1, w1);
+  v4 VertexC = V4((f32)x2, (f32)y2, z2, w2);
 
   // Flat-Bottom
   f32 InvSlope1 = 0.0f;
@@ -427,8 +449,8 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
     // Mesh.scale.x += 0.002f;
 
-    Mesh.rotation.x += 0.02f;
-    // Mesh.rotation.y += 0.02f;
+    // Mesh.rotation.x += 0.02f;
+    Mesh.rotation.y += 0.02f;
     // Mesh.rotation.z += 0.02f;
 
     // Mesh.translation.x += 0.01f;
@@ -495,7 +517,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
         ProjectedPoint.x += (f32)(WIN_WIDTH / 2);
         ProjectedPoint.y += (f32)(WIN_HEIGHT / 2);
-        CurrentTriangle.vertices[j] = V2(ProjectedPoint.x, ProjectedPoint.y);
+        CurrentTriangle.vertices[j] = V4(ProjectedPoint.x, ProjectedPoint.y, ProjectedPoint.z, ProjectedPoint.w);
       }
 
       CurrentTriangle.texture_coords[0] = { Mesh.faces[i].a_uv.u, Mesh.faces[i].a_uv.v };
@@ -544,9 +566,9 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     if (RenderMode & TEXTURED) {
       for (i32 i = 0; i < array_length(Triangles); ++i) {
         DrawTexturedTriangle(ColorBuff,
-                             (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y,
-                             (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y,
-                             (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y,
+                             (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, Triangles[i].vertices[0].z, Triangles[i].vertices[0].w,
+                             (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, Triangles[i].vertices[1].z, Triangles[i].vertices[1].w,
+                             (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, Triangles[i].vertices[2].z, Triangles[i].vertices[2].w,
                              MeshTexture,
                              Triangles[i].texture_coords);
       }

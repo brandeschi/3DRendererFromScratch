@@ -11,7 +11,7 @@ struct face_index {
 };
 
 struct triangle {
-  v2 vertices[3];
+  v4 vertices[3];
   v2 texture_coords[3];
   u32 color;
   f32 avg_depth;
