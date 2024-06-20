@@ -84,10 +84,10 @@ static void LoadPNGTextureFromFile(char *FileName) {
 
     for (u32 Row = 0; Row < (u32)TextureHeight; ++Row) {
       for (u32 Col = 0; Col < (u32)TextureHeight; ++Col) {
-        u32 Red = PNGSrcBuffer[(Row*TextureWidth*4) + (Col*4)];
-        u32 Green = PNGSrcBuffer[(Row*TextureWidth*4) + (Col*4) + 1];
-        u32 Blue = PNGSrcBuffer[(Row*TextureWidth*4) + (Col*4) + 2];
-        u32 Alpha = PNGSrcBuffer[(Row*TextureWidth*4) + (Col*4) + 3];
+        u8 Red = PNGSrcBuffer[(Row*TextureWidth*4) + (Col*4)];
+        u8 Green = PNGSrcBuffer[(Row*TextureWidth*4) + (Col*4) + 1];
+        u8 Blue = PNGSrcBuffer[(Row*TextureWidth*4) + (Col*4) + 2];
+        u8 Alpha = PNGSrcBuffer[(Row*TextureWidth*4) + (Col*4) + 3];
 
         MeshTexture[(Row*TextureWidth) + Col] = Alpha << 24 | Red << 16 | Green << 8 | Blue;
       }
