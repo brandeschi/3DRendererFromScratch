@@ -348,7 +348,7 @@ int main(int argc, char** argv) {
 
   // mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj");
   // mesh F22Mesh = LoadMeshFromObjFile("./assets/f22.obj");
-  LoadPNGTextureFromFile("./assets/cube.png");
+  upng_t * PNGTexture = LoadPNGTextureFromFile("./assets/cube.png");
 #define CUBE_VERTICES_COUNT 8
   v3 CubeVertices[CUBE_VERTICES_COUNT] = {
     { -1.0f, -1.0f, -1.0f }, // 1
@@ -602,5 +602,6 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     PrevFrameTime = SDL_GetTicks();
   }
 
+  upng_free(PNGTexture);
   return 0;
 }
