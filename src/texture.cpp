@@ -72,3 +72,26 @@ const u8 REDBRICK_TEXTURE[] = {
 };
 
 u32 *MeshTexture = (u32 *)REDBRICK_TEXTURE;
+
+static void LoadPNGTextureFromFile(char *FileName) {
+  upng_t *PNGTexture = upng_new_from_file(FileName);
+  upng_decode(PNGTexture);
+  if (PNGTexture && upng_get_error(PNGTexture) == UPNG_EOK) {
+    TextureWidth = upng_get_width(PNGTexture);
+    TextureHeight = upng_get_height(PNGTexture);
+    MeshTexture = (u32 *)malloc((TextureWidth*TextureHeight)*sizeof(u32));
+    const u8 *PNGSrcBuffer = upng_get_buffer(PNGTexture);
+
+    for (u32 Row = 0; Row < (u32)TextureHeight; ++Row) {
+      for (u32 Col = 0; Col < (u32)TextureHeight; ++Col) {
+        u32 Red = PNGSrcBuffer[(Row*TextureWidth*4) + (Col*4)];
+        u32 Green = PNGSrcBuffer[(Row*TextureWidth*4) + (Col*4) + 1];
+        u32 Blue = PNGSrcBuffer[(Row*TextureWidth*4) + (Col*4) + 2];
+        u32 Alpha = PNGSrcBuffer[(Row*TextureWidth*4) + (Col*4) + 3];
+
+        MeshTexture[(Row*TextureWidth) + Col] = Alpha << 24 | Red << 16 | Green << 8 | Blue;
+      }
+    }
+  }
+  upng_free(PNGTexture);
+}

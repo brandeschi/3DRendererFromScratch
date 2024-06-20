@@ -348,6 +348,7 @@ int main(int argc, char** argv) {
 
   // mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj");
   // mesh F22Mesh = LoadMeshFromObjFile("./assets/f22.obj");
+  LoadPNGTextureFromFile("./assets/cube.png");
 #define CUBE_VERTICES_COUNT 8
   v3 CubeVertices[CUBE_VERTICES_COUNT] = {
     { -1.0f, -1.0f, -1.0f }, // 1
