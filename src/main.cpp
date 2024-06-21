@@ -346,7 +346,7 @@ int main(int argc, char** argv) {
   }
   SDL_Texture *CBTexture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIN_WIDTH, WIN_HEIGHT);
 
-  // mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj");
+  mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj");
   // mesh F22Mesh = LoadMeshFromObjFile("./assets/f22.obj");
   upng_t * PNGTexture = LoadPNGTextureFromFile("./assets/cube.png");
 #define CUBE_VERTICES_COUNT 8
@@ -395,8 +395,8 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
   // Mesh.vertices = F22Mesh.vertices;
   // Mesh.faces = F22Mesh.faces;
 
-  // Mesh.vertices = CubeMesh.vertices;
-  // Mesh.faces = CubeMesh.faces;
+  Mesh.vertices = CubeMesh.vertices;
+  Mesh.faces = CubeMesh.faces;
 
   Mesh.scale = { 1.0f, 1.0f, 1.0f };
   f32 FOV = PI32 / 3.0f;
@@ -450,9 +450,9 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
     // Mesh.scale.x += 0.002f;
 
-    // Mesh.rotation.x += 0.02f;
+    Mesh.rotation.x += 0.02f;
     Mesh.rotation.y += 0.02f;
-    // Mesh.rotation.z += 0.02f;
+    Mesh.rotation.z += 0.02f;
 
     // Mesh.translation.x += 0.01f;
     Mesh.translation.z = 5.0f;
@@ -488,10 +488,6 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
       v3 VectorCA = FaceVertC - FaceVertA;
       V3Normalize(&VectorBA);
       V3Normalize(&VectorCA);
-      // NOTE: For some reason, the cube loaded from the obj file
-      // needs the cross product to be one way, and the one from CubeVertices
-      // needs to be this way... not sure why they are different
-      // v3 FaceNormal = CrossProduct(VectorCA, VectorBA);
       v3 FaceNormal = CrossProduct(VectorBA, VectorCA);
       V3Normalize(&FaceNormal);
 
