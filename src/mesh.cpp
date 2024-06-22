@@ -13,7 +13,6 @@ static mesh LoadMeshFromObjFile(char *FileName) {
     char *LinePtr = FileLine;
     switch (FileLine[0]) {
       case 'v': {
-        // printf("%s\n", FileLine);
         FileLine[1] == 't' ? LinePtr += 3 : LinePtr += 2;
         v3 Vertex = {0};
         v2 UV = {0};
@@ -41,7 +40,6 @@ static mesh LoadMeshFromObjFile(char *FileName) {
         }
       } break;
       case 'f': {
-        // printf("%s\n", FileLine);
         LinePtr += 2;
         face_index Face = {0};
         char FaceIndexStr[8];

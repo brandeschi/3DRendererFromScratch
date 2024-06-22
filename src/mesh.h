@@ -21,7 +21,7 @@ struct mesh {
   v3 *vertices;
   face_index *faces;
   v2 *uvs;
-  v3 scale;
+  v3 scale = { 1.0f, 1.0f, 1.0f };
   v3 rotation;
   v3 translation;
 };

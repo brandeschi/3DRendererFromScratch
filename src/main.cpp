@@ -354,16 +354,16 @@ int main(int argc, char** argv) {
   }
   SDL_Texture *CBTexture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIN_WIDTH, WIN_HEIGHT);
 
-  mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj");
-  upng_t * CubeTexture = LoadPNGTextureFromFile("./assets/cube.png");
-  mesh SphereMesh = LoadMeshFromObjFile("./assets/sphere.obj");
-  // upng_t * SphereTexture = LoadPNGTextureFromFile("./assets/sphere.png");
+  // mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj");
+  // upng_t *CubeTexture = LoadPNGTextureFromFile("./assets/cube.png");
+  // mesh SphereMesh = LoadMeshFromObjFile("./assets/sphere.obj");
+  // upng_t *SphereTexture = LoadPNGTextureFromFile("./assets/sphere.png");
   // mesh F22Mesh = LoadMeshFromObjFile("./assets/f22.obj");
-  // upng_t * F22Texture = LoadPNGTextureFromFile("./assets/f22.png");
+  // upng_t *F22Texture = LoadPNGTextureFromFile("./assets/f22.png");
   // mesh F117Mesh = LoadMeshFromObjFile("./assets/f117.obj");
-  // upng_t * F117Texture = LoadPNGTextureFromFile("./assets/f117.png");
-  // mesh CrabMesh = LoadMeshFromObjFile("./assets/crab.obj");
-  // upng_t * CrabTexture = LoadPNGTextureFromFile("./assets/crab.png");
+  // upng_t *F117Texture = LoadPNGTextureFromFile("./assets/f117.png");
+  mesh CrabMesh = LoadMeshFromObjFile("./assets/crab.obj");
+  upng_t *CrabTexture = LoadPNGTextureFromFile("./assets/crab.png");
 #define CUBE_VERTICES_COUNT 8
   v3 CubeVertices[CUBE_VERTICES_COUNT] = {
     { -1.0f, -1.0f, -1.0f }, // 1
@@ -398,7 +398,6 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
   { 6, 1, 4, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF }
 };
 
-  v3 CameraPos = { 0.0f, 0.0f, 0.0f };
   // Load cube mesh data
   for (u32 i = 0; i < CUBE_VERTICES_COUNT; ++i) {
     array_push(Mesh.vertices, v3, CubeVertices[i]);
@@ -407,18 +406,18 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     array_push(Mesh.faces, face_index, CubeFaces[i]);
   }
 
-  Mesh.vertices = CubeMesh.vertices;
-  Mesh.faces = CubeMesh.faces;
-  Mesh.vertices = SphereMesh.vertices;
-  Mesh.faces = SphereMesh.faces;
+  // Mesh.vertices = CubeMesh.vertices;
+  // Mesh.faces = CubeMesh.faces;
+  // Mesh.vertices = SphereMesh.vertices;
+  // Mesh.faces = SphereMesh.faces;
   // Mesh.vertices = F22Mesh.vertices;
   // Mesh.faces = F22Mesh.faces;
   // Mesh.vertices = F117Mesh.vertices;
   // Mesh.faces = F117Mesh.faces;
-  // Mesh.vertices = CrabMesh.vertices;
-  // Mesh.faces = CrabMesh.faces;
+  Mesh.vertices = CrabMesh.vertices;
+  Mesh.faces = CrabMesh.faces;
 
-  Mesh.scale = { 1.0f, 1.0f, 1.0f };
+  v3 CameraPos = { 0.0f, 0.0f, 0.0f };
   f32 FOV = PI32 / 3.0f;
   f32 ZNear = 0.1f;
   f32 ZFar = 100.0f;
@@ -470,8 +469,8 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
     // Mesh.scale.x += 0.002f;
 
-    Mesh.rotation.x += 0.02f;
-    // Mesh.rotation.y += 0.02f;
+    // Mesh.rotation.x += 0.02f;
+    Mesh.rotation.y += 0.02f;
     // Mesh.rotation.z += 0.02f;
 
     // Mesh.translation.x += 0.01f;
@@ -481,7 +480,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     mat4 XRotationMatrix = Mat4RotateX(Mesh.rotation.x);
     mat4 YRotationMatrix = Mat4RotateY(Mesh.rotation.y);
     mat4 ZRotationMatrix = Mat4RotateZ(Mesh.rotation.z);
-    mat4 TranslateMatrix = Mat4Translate(Mesh.translation.x, Mesh.translation.y, Mesh.translation.z);
+    mat4 TranslationMatrix = Mat4Translate(Mesh.translation.x, Mesh.translation.y, Mesh.translation.z);
 
     Triangles = 0;
     for (i32 i = 0; i < array_length(Mesh.faces); ++i) {
@@ -496,7 +495,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
         v4 NewVert = V3ToV4(FaceVerts[j]);
         // ORDER MATTERS!!!!! the below is really S*R*T
         // Builds like XRot*Scale -> YRot*(XRot*Scale) -> ZRot*(YRot*XRot*Scale) -> Translate*(ZRot*YRot*XRot*Scale)
-        mat4 WorldMatrix = TranslateMatrix*ZRotationMatrix*YRotationMatrix*XRotationMatrix*ScaleMatrix;
+        mat4 WorldMatrix = TranslationMatrix*ZRotationMatrix*YRotationMatrix*XRotationMatrix*ScaleMatrix;
         NewVert = Mat4MultV4(WorldMatrix, NewVert);
         FaceVerts[j] = V3FromV4(NewVert);
       }
@@ -549,7 +548,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     }
 
     // NOTE: This is will not be efficient at all...
-    // Will be very 'piggy' as i am copy swaps
+    // Will be very 'piggy' as i am doing copy swaps
     BubbleSortTrianlges(Triangles);
 
     // RENDER
