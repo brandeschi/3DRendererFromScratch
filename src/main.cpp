@@ -244,6 +244,14 @@ static void DrawTexturedTriangle(u32 *ColorBuffer,
     SwapF32(&uvs[0].u, &uvs[1].u);
   }
 
+  // Flipping the V coord of the texture as they go from bottom left instead of top left
+  // uvs[0].u = 1.0f - uvs[0].u;
+  // uvs[1].u = 1.0f - uvs[1].u;
+  // uvs[2].u = 1.0f - uvs[2].u;
+  uvs[0].v = 1.0f - uvs[0].v;
+  uvs[1].v = 1.0f - uvs[1].v;
+  uvs[2].v = 1.0f - uvs[2].v;
+
   v4 VertexA = V4((f32)x0, (f32)y0, z0, w0);
   v4 VertexB = V4((f32)x1, (f32)y1, z1, w1);
   v4 VertexC = V4((f32)x2, (f32)y2, z2, w2);
@@ -347,8 +355,15 @@ int main(int argc, char** argv) {
   SDL_Texture *CBTexture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIN_WIDTH, WIN_HEIGHT);
 
   mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj");
+  upng_t * CubeTexture = LoadPNGTextureFromFile("./assets/cube.png");
+  mesh SphereMesh = LoadMeshFromObjFile("./assets/sphere.obj");
+  // upng_t * SphereTexture = LoadPNGTextureFromFile("./assets/sphere.png");
   // mesh F22Mesh = LoadMeshFromObjFile("./assets/f22.obj");
-  upng_t * PNGTexture = LoadPNGTextureFromFile("./assets/cube.png");
+  // upng_t * F22Texture = LoadPNGTextureFromFile("./assets/f22.png");
+  // mesh F117Mesh = LoadMeshFromObjFile("./assets/f117.obj");
+  // upng_t * F117Texture = LoadPNGTextureFromFile("./assets/f117.png");
+  // mesh CrabMesh = LoadMeshFromObjFile("./assets/crab.obj");
+  // upng_t * CrabTexture = LoadPNGTextureFromFile("./assets/crab.png");
 #define CUBE_VERTICES_COUNT 8
   v3 CubeVertices[CUBE_VERTICES_COUNT] = {
     { -1.0f, -1.0f, -1.0f }, // 1
@@ -392,11 +407,16 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     array_push(Mesh.faces, face_index, CubeFaces[i]);
   }
 
-  // Mesh.vertices = F22Mesh.vertices;
-  // Mesh.faces = F22Mesh.faces;
-
   Mesh.vertices = CubeMesh.vertices;
   Mesh.faces = CubeMesh.faces;
+  Mesh.vertices = SphereMesh.vertices;
+  Mesh.faces = SphereMesh.faces;
+  // Mesh.vertices = F22Mesh.vertices;
+  // Mesh.faces = F22Mesh.faces;
+  // Mesh.vertices = F117Mesh.vertices;
+  // Mesh.faces = F117Mesh.faces;
+  // Mesh.vertices = CrabMesh.vertices;
+  // Mesh.faces = CrabMesh.faces;
 
   Mesh.scale = { 1.0f, 1.0f, 1.0f };
   f32 FOV = PI32 / 3.0f;
@@ -451,8 +471,8 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     // Mesh.scale.x += 0.002f;
 
     Mesh.rotation.x += 0.02f;
-    Mesh.rotation.y += 0.02f;
-    Mesh.rotation.z += 0.02f;
+    // Mesh.rotation.y += 0.02f;
+    // Mesh.rotation.z += 0.02f;
 
     // Mesh.translation.x += 0.01f;
     Mesh.translation.z = 5.0f;
@@ -511,6 +531,8 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
         ProjectedPoint.x *= (f32)(WIN_WIDTH / 2);
         ProjectedPoint.y *= (f32)(WIN_HEIGHT / 2);
+
+        ProjectedPoint.y *= -1.0f;
 
         ProjectedPoint.x += (f32)(WIN_WIDTH / 2);
         ProjectedPoint.y += (f32)(WIN_HEIGHT / 2);
@@ -598,6 +620,5 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     PrevFrameTime = SDL_GetTicks();
   }
 
-  upng_free(PNGTexture);
   return 0;
 }

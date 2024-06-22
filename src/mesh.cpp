@@ -13,7 +13,7 @@ static mesh LoadMeshFromObjFile(char *FileName) {
     char *LinePtr = FileLine;
     switch (FileLine[0]) {
       case 'v': {
-        printf("%s\n", FileLine);
+        // printf("%s\n", FileLine);
         FileLine[1] == 't' ? LinePtr += 3 : LinePtr += 2;
         v3 Vertex = {0};
         v2 UV = {0};
@@ -41,7 +41,7 @@ static mesh LoadMeshFromObjFile(char *FileName) {
         }
       } break;
       case 'f': {
-        printf("%s\n", FileLine);
+        // printf("%s\n", FileLine);
         LinePtr += 2;
         face_index Face = {0};
         char FaceIndexStr[8];
@@ -68,12 +68,13 @@ static mesh LoadMeshFromObjFile(char *FileName) {
               Face.c = atoi(FaceIndexStr);
             }
           } else if (ValueCount == 2) {
+            i32 Index = atoi(FaceIndexStr) - 1;
             if (FaceIndex == 0) {
-              Face.a_uv = Result.uvs[atoi(FaceIndexStr) - 1];
+              Face.a_uv = Result.uvs[Index];
             } else if (FaceIndex == 1) {
-              Face.b_uv = Result.uvs[atoi(FaceIndexStr) - 1];
+              Face.b_uv = Result.uvs[Index];
             } else if (FaceIndex == 2) {
-              Face.c_uv = Result.uvs[atoi(FaceIndexStr) - 1];
+              Face.c_uv = Result.uvs[Index];
             }
           }
           memset(FaceIndexStr, 0, 8);
