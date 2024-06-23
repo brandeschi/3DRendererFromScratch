@@ -4,6 +4,8 @@ struct light {
   v3 direction;
 };
 
+f32 *DepthBuff;
+
 inline u32 ColorFromLightIntensity(u32 Color, f32 Percentage) {
   // TODO: SafeTruncate??
   if (Percentage < 0.0f) Percentage = 0.0f;
@@ -208,8 +210,12 @@ static void DrawTexel(u32 *ColorBuffer,
   i32 TextureX = abs((i32)(InterpolatedU*TextureWidth));
   i32 TextureY = abs((i32)(InterpolatedV*TextureHeight));
 
-  i32 TextureIndex = (((TextureWidth*TextureY) + TextureX) % (TextureWidth*TextureHeight));
-  ColorBuffer[(WIN_WIDTH*y) + x] = Texture[TextureIndex];
+  InterpolatedReciprocalW = 1.0f - InterpolatedReciprocalW;
+  if (InterpolatedReciprocalW < DepthBuff[(WIN_WIDTH*y) + x]) {
+    i32 TextureIndex = (((TextureWidth*TextureY) + TextureX) % (TextureWidth*TextureHeight));
+    ColorBuffer[(WIN_WIDTH*y) + x] = Texture[TextureIndex];
+    DepthBuff[(WIN_WIDTH*y) + x] = InterpolatedReciprocalW;
+  }
 }
 
 static void DrawTexturedTriangle(u32 *ColorBuffer,
@@ -273,7 +279,6 @@ static void DrawTexturedTriangle(u32 *ColorBuffer,
 
       for (i32 Col = (i32)StartX; Col < (i32)EndX; ++Col) {
         DrawTexel(ColorBuffer, Col, Row, VertexA, VertexB, VertexC, texture, uvs);
-        // ColorBuffer[(WIN_WIDTH*Row) + Col] = (Row % 5 == 0 && Col % 5 == 0) ? 0xFF00FFFF : 0xFF3A4253;
       }
     }
   }
@@ -295,7 +300,6 @@ static void DrawTexturedTriangle(u32 *ColorBuffer,
 
       for (i32 Col = (i32)StartX; Col < (i32)EndX; ++Col) {
         DrawTexel(ColorBuffer, Col, Row, VertexA, VertexB, VertexC, texture, uvs);
-        // ColorBuffer[(WIN_WIDTH*Row) + Col] = (Row % 5 == 0 && Col % 5 == 0) ? 0xFFFF00FF : 0xFF3A4253;
       }
     }
   }
@@ -348,6 +352,7 @@ int main(int argc, char** argv) {
 
   // SETUP
   u32 *ColorBuff = (u32 *)malloc(sizeof(u32)*WIN_WIDTH*WIN_HEIGHT);
+  DepthBuff = (f32 *)malloc(sizeof(f32)*WIN_WIDTH*WIN_HEIGHT);
   if (!ColorBuff) {
     fprintf(stderr, "Error allocating with malloc\n");
     return -1;
@@ -358,12 +363,12 @@ int main(int argc, char** argv) {
   // upng_t *CubeTexture = LoadPNGTextureFromFile("./assets/cube.png");
   // mesh SphereMesh = LoadMeshFromObjFile("./assets/sphere.obj");
   // upng_t *SphereTexture = LoadPNGTextureFromFile("./assets/sphere.png");
-  // mesh F22Mesh = LoadMeshFromObjFile("./assets/f22.obj");
-  // upng_t *F22Texture = LoadPNGTextureFromFile("./assets/f22.png");
+  mesh F22Mesh = LoadMeshFromObjFile("./assets/f22.obj");
+  upng_t *F22Texture = LoadPNGTextureFromFile("./assets/f22.png");
   // mesh F117Mesh = LoadMeshFromObjFile("./assets/f117.obj");
   // upng_t *F117Texture = LoadPNGTextureFromFile("./assets/f117.png");
-  mesh CrabMesh = LoadMeshFromObjFile("./assets/crab.obj");
-  upng_t *CrabTexture = LoadPNGTextureFromFile("./assets/crab.png");
+  // mesh CrabMesh = LoadMeshFromObjFile("./assets/crab.obj");
+  // upng_t *CrabTexture = LoadPNGTextureFromFile("./assets/crab.png");
 #define CUBE_VERTICES_COUNT 8
   v3 CubeVertices[CUBE_VERTICES_COUNT] = {
     { -1.0f, -1.0f, -1.0f }, // 1
@@ -410,12 +415,12 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
   // Mesh.faces = CubeMesh.faces;
   // Mesh.vertices = SphereMesh.vertices;
   // Mesh.faces = SphereMesh.faces;
-  // Mesh.vertices = F22Mesh.vertices;
-  // Mesh.faces = F22Mesh.faces;
+  Mesh.vertices = F22Mesh.vertices;
+  Mesh.faces = F22Mesh.faces;
   // Mesh.vertices = F117Mesh.vertices;
   // Mesh.faces = F117Mesh.faces;
-  Mesh.vertices = CrabMesh.vertices;
-  Mesh.faces = CrabMesh.faces;
+  // Mesh.vertices = CrabMesh.vertices;
+  // Mesh.faces = CrabMesh.faces;
 
   v3 CameraPos = { 0.0f, 0.0f, 0.0f };
   f32 FOV = PI32 / 3.0f;
@@ -469,8 +474,8 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
     // Mesh.scale.x += 0.002f;
 
-    // Mesh.rotation.x += 0.02f;
-    Mesh.rotation.y += 0.02f;
+    Mesh.rotation.x += 0.02f;
+    // Mesh.rotation.y += 0.02f;
     // Mesh.rotation.z += 0.02f;
 
     // Mesh.translation.x += 0.01f;
@@ -558,6 +563,8 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
       for (u32 x = 0; x < WIN_WIDTH; ++x) {
         // Darker Background
         ColorBuff[(WIN_WIDTH * y) + x] = 0xFF3A4253;
+        // Start all depths at the zFar
+        DepthBuff[(WIN_WIDTH * y) + x] = 1.0f;
       }
     }
     // Dot Matrix
