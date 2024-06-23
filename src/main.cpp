@@ -75,16 +75,6 @@ inline void SwapTriangles(triangle *a, triangle *b) {
   *b = temp;
 }
 
-void BubbleSortTrianlges(triangle *triangles) {
-  for (i32 i = 1; i < array_length(triangles); ++i) {
-    for (i32 j = 0; j < array_length(triangles) - 1; ++j) {
-      if (triangles[j].avg_depth < triangles[j + 1].avg_depth) { // < or > dependent on Coord system handness
-        SwapTriangles(&triangles[j], &triangles[j + 1]);
-      }
-    }
-  }
-}
-
 // Draw Funcs
 static void DrawLine(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1, u32 Color) {
   i32 DeltaX = x1 - x0;
@@ -103,85 +93,97 @@ static void DrawLine(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1, u32 Color
   }
 }
 
-static void DrawFilledTriangle(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1, i32 x2, i32 y2, u32 Color) {
+static void DrawFilledTriangle(u32 *ColorBuffer,
+                               i32 x0, i32 y0, f32 z0, f32 w0,
+                               i32 x1, i32 y1, f32 z1, f32 w1,
+                               i32 x2, i32 y2, f32 z2, f32 w2,
+                               u32 Color) {
   // NOTE: This uses the Flat-top/Flat-bottom method
   // Ensure y's are sorted with y0 being the smallest and y2 being the largest
   if (y0 > y1) {
     SwapI32(&y0, &y1);
     SwapI32(&x0, &x1);
+    SwapF32(&z0, &z1);
+    SwapF32(&w0, &w1);
   }
   if (y1 > y2) {
     SwapI32(&y1, &y2);
     SwapI32(&x1, &x2);
+    SwapF32(&z1, &z2);
+    SwapF32(&w1, &w2);
   }
   if (y0 > y1) {
     SwapI32(&y0, &y1);
     SwapI32(&x0, &x1);
+    SwapF32(&z0, &z1);
+    SwapF32(&w0, &w1);
   }
 
-  if (y0 == y1) {
-    i32 DeltaX1X2 = x1 - x2;
-    i32 DeltaY1Y2 = y1 - y2;
-    i32 DeltaMXX2 = x0 - x2;
-    i32 DeltaMYY2 = y0 - y2;
-    f32 InvSlopeOneToTwo = (f32)DeltaX1X2 / (f32)DeltaY1Y2;
-    f32 InvSlopeMToTwo = (f32)DeltaMXX2 / (f32)DeltaMYY2;
-    f32 StartX = (f32)x1;
-    f32 EndX = (f32)x0;
-    for (i32 row = y1; row <= y2; ++row) {
-      DrawLine(ColorBuffer, (i32)StartX, row, (i32)EndX, row, Color);
-      StartX += InvSlopeOneToTwo;
-      EndX += InvSlopeMToTwo;
+  v4 VertexA = V4((f32)x0, (f32)y0, z0, w0);
+  v4 VertexB = V4((f32)x1, (f32)y1, z1, w1);
+  v4 VertexC = V4((f32)x2, (f32)y2, z2, w2);
+
+  // Flat-Bottom
+  f32 InvSlope1 = 0.0f;
+  f32 InvSlope2 = 0.0f;
+
+  if (y1 - y0 != 0) InvSlope1 = (f32)(x1 - x0) / (f32)abs(y1 - y0);
+  if (y2 - y0 != 0) InvSlope2 = (f32)(x2 - x0) / (f32)abs(y2 - y0);
+
+  if (y1 - y0 != 0) {
+    for (i32 Row = y0; Row <= y1; ++Row) {
+      i32 StartX = (i32)(x1 + (Row - y1)*InvSlope1);
+      i32 EndX = (i32)(x0 + (Row - y0)*InvSlope2);
+      if (EndX < StartX) {
+        SwapI32(&StartX, &EndX);
+      }
+
+      for (i32 Col = (i32)StartX; Col < (i32)EndX; ++Col) {
+        v3 Weights = BarycentricWeights(V2(VertexA.x, VertexA.y),
+                                        V2(VertexB.x, VertexB.y),
+                                        V2(VertexC.x, VertexC.y),
+                                        V2((f32)Col, (f32)Row));
+        f32 InterpolatedReciprocalW = (1.0f / VertexA.w)*Weights.x +
+                                      (1.0f / VertexB.w)*Weights.y +
+                                      (1.0f / VertexC.w)*Weights.z;
+        InterpolatedReciprocalW = 1.0f - InterpolatedReciprocalW;
+        if (InterpolatedReciprocalW < DepthBuff[(WIN_WIDTH*Row) + Col]) {
+          ColorBuffer[(WIN_WIDTH*Row) + Col] = Color;
+          DepthBuff[(WIN_WIDTH*Row) + Col] = InterpolatedReciprocalW;
+        }
+      }
     }
-  } else if (y1 == y2) {
-    i32 DeltaX1X0 = x1 - x0;
-    i32 DeltaY1Y0 = y1 - y0;
-    i32 DeltaX2X0 = x2 - x0;
-    i32 DeltaY2Y0 = y2 - y0;
-    f32 InvSlopeX1Y1 = (f32)DeltaX1X0 / (f32)DeltaY1Y0;
-    f32 InvSlopeX2Y2 = (f32)DeltaX2X0 / (f32)DeltaY2Y0;
+  }
 
-    f32 StartX = (f32)x0;
-    f32 EndX = (f32)x0;
-    for (i32 row = y0; row <= y1; ++row) {
-      DrawLine(ColorBuffer, (i32)StartX, row, (i32)EndX, row, Color);
-      StartX += InvSlopeX1Y1;
-      EndX += InvSlopeX2Y2;
-    }
-  } else {
-    i32 My = y1;
-    i32 Mx = (i32)(((f32)((x2 - x0)*(y1 - y0)) / (f32)(y2 - y0)) + x0);
+  // Flat-Top
+  InvSlope1 = 0.0f;
+  InvSlope2 = 0.0f;
 
-    // Flat-bottom
-    // Since we will always move downward at a constant Y, we actually want to find the INVERSE slope of the line
-    i32 DeltaX1X0 = x1 - x0;
-    i32 DeltaY1Y0 = y1 - y0;
-    i32 DeltaX2X0 = Mx - x0;
-    i32 DeltaY2Y0 = My - y0;
-    f32 InvSlopeX1Y1 = (f32)DeltaX1X0 / (f32)DeltaY1Y0;
-    f32 InvSlopeX2Y2 = (f32)DeltaX2X0 / (f32)DeltaY2Y0;
+  if (y2 - y1 != 0) InvSlope1 = (f32)(x2 - x1) / (f32)abs(y2 - y1);
+  if (y2 - y0 != 0) InvSlope2 = (f32)(x2 - x0) / (f32)abs(y2 - y0);
 
-    f32 StartX = (f32)x0;
-    f32 EndX = (f32)x0;
-    for (i32 row = y0; row <= My; ++row) {
-      DrawLine(ColorBuffer, (i32)StartX, row, (i32)EndX, row, Color);
-      StartX += InvSlopeX1Y1;
-      EndX += InvSlopeX2Y2;
-    }
+  if (y2 - y1 != 0) {
+    for (i32 Row = y1; Row <= y2; ++Row) {
+      i32 StartX = (i32)(x1 + (Row - y1)*InvSlope1);
+      i32 EndX = (i32)(x0 + (Row - y0)*InvSlope2);
+      if (EndX < StartX) {
+        SwapI32(&StartX, &EndX);
+      }
 
-    // Flat-top
-    i32 DeltaX1X2 = x1 - x2;
-    i32 DeltaY1Y2 = y1 - y2;
-    i32 DeltaMXX2 = Mx - x2;
-    i32 DeltaMYY2 = My - y2;
-    f32 InvSlopeOneToTwo = (f32)DeltaX1X2 / (f32)DeltaY1Y2;
-    f32 InvSlopeMToTwo = (f32)DeltaMXX2 / (f32)DeltaMYY2;
-    StartX = (f32)x1;
-    EndX = (f32)Mx;
-    for (i32 row = y1; row <= y2; ++row) {
-      DrawLine(ColorBuffer, (i32)StartX, row, (i32)EndX, row, Color);
-      StartX += InvSlopeOneToTwo;
-      EndX += InvSlopeMToTwo;
+      for (i32 Col = (i32)StartX; Col < (i32)EndX; ++Col) {
+        v3 Weights = BarycentricWeights(V2(VertexA.x, VertexA.y),
+                                        V2(VertexB.x, VertexB.y),
+                                        V2(VertexC.x, VertexC.y),
+                                        V2((f32)Col, (f32)Row));
+        f32 InterpolatedReciprocalW = (1.0f / VertexA.w)*Weights.x +
+                                      (1.0f / VertexB.w)*Weights.y +
+                                      (1.0f / VertexC.w)*Weights.z;
+        InterpolatedReciprocalW = 1.0f - InterpolatedReciprocalW;
+        if (InterpolatedReciprocalW < DepthBuff[(WIN_WIDTH*Row) + Col]) {
+          ColorBuffer[(WIN_WIDTH*Row) + Col] = Color;
+          DepthBuff[(WIN_WIDTH*Row) + Col] = InterpolatedReciprocalW;
+        }
+      }
     }
   }
 }
@@ -548,13 +550,8 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
       CurrentTriangle.texture_coords[2] = { Mesh.faces[i].c_uv.u, Mesh.faces[i].c_uv.v };
       f32 AlignmentPercentage = -DotProduct(FaceNormal, GLight.direction);
       CurrentTriangle.color = ColorFromLightIntensity(Mesh.faces[i].color, AlignmentPercentage);
-      CurrentTriangle.avg_depth = (FaceVerts[0].z + FaceVerts[1].z + FaceVerts[2].z) / 3.0f;
       array_push(Triangles, triangle, CurrentTriangle);
     }
-
-    // NOTE: This is will not be efficient at all...
-    // Will be very 'piggy' as i am doing copy swaps
-    BubbleSortTrianlges(Triangles);
 
     // RENDER
 
@@ -582,9 +579,9 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     if (RenderMode & FILLED) {
       for (i32 i = 0; i < array_length(Triangles); ++i) {
         DrawFilledTriangle(ColorBuff,
-                           (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y,
-                           (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y,
-                           (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y,
+                           (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, Triangles[i].vertices[0].z, Triangles[i].vertices[0].w,
+                           (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, Triangles[i].vertices[1].z, Triangles[i].vertices[1].w,
+                           (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, Triangles[i].vertices[2].z, Triangles[i].vertices[2].w,
                            Triangles[i].color);
       }
     }
