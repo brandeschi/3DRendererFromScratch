@@ -439,42 +439,43 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
   while (AppRunning) {
     // INPUT
     SDL_Event Event;
-    SDL_PollEvent(&Event);
-
-    switch (Event.type) {
-      case SDL_QUIT: {
-        AppRunning = false;
-      } break;
-      case SDL_KEYDOWN: {
-        if(Event.key.keysym.sym == SDLK_ESCAPE) {
+    while(SDL_PollEvent(&Event)) {
+      switch (Event.type) {
+        case SDL_QUIT: {
           AppRunning = false;
-        }
-        if(Event.key.keysym.sym == SDLK_1) {
-          RenderMode = WIREFRAME | VERTICES;
-        }
-        if(Event.key.keysym.sym == SDLK_2) {
-          RenderMode = WIREFRAME;
-        }
-        if(Event.key.keysym.sym == SDLK_3) {
-          RenderMode = FILLED;
-        }
-        if(Event.key.keysym.sym == SDLK_4) {
-          RenderMode = FILLED | WIREFRAME;
-        }
-        if(Event.key.keysym.sym == SDLK_5) {
-          RenderMode = TEXTURED;
-        }
-        if(Event.key.keysym.sym == SDLK_6) {
-          RenderMode = WIREFRAME | TEXTURED;
-        }
-        if(Event.key.keysym.sym == SDLK_c) {
-          BackFaceCull = true;
-        }
-        if(Event.key.keysym.sym == SDLK_d) {
-          BackFaceCull = false;
-        }
-      } break;
+        } break;
+        case SDL_KEYDOWN: {
+          if(Event.key.keysym.sym == SDLK_ESCAPE) {
+            AppRunning = false;
+          }
+          if(Event.key.keysym.sym == SDLK_1) {
+            RenderMode = WIREFRAME | VERTICES;
+          }
+          if(Event.key.keysym.sym == SDLK_2) {
+            RenderMode = WIREFRAME;
+          }
+          if(Event.key.keysym.sym == SDLK_3) {
+            RenderMode = FILLED;
+          }
+          if(Event.key.keysym.sym == SDLK_4) {
+            RenderMode = FILLED | WIREFRAME;
+          }
+          if(Event.key.keysym.sym == SDLK_5) {
+            RenderMode = TEXTURED;
+          }
+          if(Event.key.keysym.sym == SDLK_6) {
+            RenderMode = WIREFRAME | TEXTURED;
+          }
+          if(Event.key.keysym.sym == SDLK_c) {
+            BackFaceCull = true;
+          }
+          if(Event.key.keysym.sym == SDLK_d) {
+            BackFaceCull = false;
+          }
+        } break;
+      }
     }
+
 
     // UPDATE
 
