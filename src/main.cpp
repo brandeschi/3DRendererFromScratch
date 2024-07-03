@@ -1,9 +1,5 @@
 #include "main.unity.h"
 
-struct light {
-  v3 direction;
-};
-
 f32 *DepthBuff;
 
 inline u32 ColorFromLightIntensity(u32 Color, f32 Percentage) {
@@ -50,10 +46,11 @@ enum RenderModeEnum {
 
 global b32 AppRunning = false;
 global u32 PrevFrameTime = 0;
+global f32 DeltaTime = 0.0f;
 global i32 SyncTime = 0;
 global b32 BackFaceCull = true;
 global u32 RenderMode = FILLED;
-#define FPS 30
+#define FPS 60
 #define TARGET_FRAME_TIME (1000 / FPS)
 global const u32 WIN_WIDTH = 1200;
 global const u32 WIN_HEIGHT = 900;
@@ -365,12 +362,14 @@ int main(int argc, char** argv) {
   // upng_t *CubeTexture = LoadPNGTextureFromFile("./assets/cube.png");
   // mesh SphereMesh = LoadMeshFromObjFile("./assets/sphere.obj");
   // upng_t *SphereTexture = LoadPNGTextureFromFile("./assets/sphere.png");
-  mesh F22Mesh = LoadMeshFromObjFile("./assets/f22.obj");
-  upng_t *F22Texture = LoadPNGTextureFromFile("./assets/f22.png");
-  // mesh F117Mesh = LoadMeshFromObjFile("./assets/f117.obj");
-  // upng_t *F117Texture = LoadPNGTextureFromFile("./assets/f117.png");
+  // mesh F22Mesh = LoadMeshFromObjFile("./assets/f22.obj");
+  // upng_t *F22Texture = LoadPNGTextureFromFile("./assets/f22.png");
+  mesh F117Mesh = LoadMeshFromObjFile("./assets/f117.obj");
+  upng_t *F117Texture = LoadPNGTextureFromFile("./assets/f117.png");
   // mesh CrabMesh = LoadMeshFromObjFile("./assets/crab.obj");
   // upng_t *CrabTexture = LoadPNGTextureFromFile("./assets/crab.png");
+  // mesh DroneMesh = LoadMeshFromObjFile("./assets/drone.obj");
+  // upng_t *DroneTexture = LoadPNGTextureFromFile("./assets/drone.png");
 #define CUBE_VERTICES_COUNT 8
   v3 CubeVertices[CUBE_VERTICES_COUNT] = {
     { -1.0f, -1.0f, -1.0f }, // 1
@@ -417,14 +416,19 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
   // Mesh.faces = CubeMesh.faces;
   // Mesh.vertices = SphereMesh.vertices;
   // Mesh.faces = SphereMesh.faces;
-  Mesh.vertices = F22Mesh.vertices;
-  Mesh.faces = F22Mesh.faces;
-  // Mesh.vertices = F117Mesh.vertices;
-  // Mesh.faces = F117Mesh.faces;
+  // Mesh.vertices = F22Mesh.vertices;
+  // Mesh.faces = F22Mesh.faces;
+  Mesh.vertices = F117Mesh.vertices;
+  Mesh.faces = F117Mesh.faces;
   // Mesh.vertices = CrabMesh.vertices;
   // Mesh.faces = CrabMesh.faces;
+  // Mesh.vertices = DroneMesh.vertices;
+  // Mesh.faces = DroneMesh.faces;
 
-  v3 CameraPos = { 0.0f, 0.0f, 0.0f };
+  camera Camera = {
+    { 0.0f, 0.0f, 0.0f },
+    { 0.0f, 0.0f, 1.0f },
+  };
   f32 FOV = PI32 / 3.0f;
   f32 ZNear = 0.1f;
   f32 ZFar = 100.0f;
@@ -476,12 +480,18 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
     // Mesh.scale.x += 0.002f;
 
-    Mesh.rotation.x += 0.02f;
-    // Mesh.rotation.y += 0.02f;
-    // Mesh.rotation.z += 0.02f;
+    Mesh.rotation.x += 0.5f*DeltaTime;
+    // Mesh.rotation.y += 5.0f*DeltaTime;
+    // Mesh.rotation.z += 5.0f*DeltaTime;
 
-    // Mesh.translation.x += 0.01f;
+    // Mesh.translation.x += 5.0f*DeltaTime;
     Mesh.translation.z = 5.0f;
+
+    Camera.position.x += 0.3f*DeltaTime;
+    Camera.position.y += 0.3f*DeltaTime;
+
+    v3 Target = Mesh.translation;
+    mat4 ViewMatrix = M4LookAt(Camera.position, Target, { 0.0f, 1.0f, 0.0f });
 
     mat4 ScaleMatrix = Mat4Scale(Mesh.scale.x, Mesh.scale.y, Mesh.scale.z);
     mat4 XRotationMatrix = Mat4RotateX(Mesh.rotation.x);
@@ -504,6 +514,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
         // Builds like XRot*Scale -> YRot*(XRot*Scale) -> ZRot*(YRot*XRot*Scale) -> Translate*(ZRot*YRot*XRot*Scale)
         mat4 WorldMatrix = TranslationMatrix*ZRotationMatrix*YRotationMatrix*XRotationMatrix*ScaleMatrix;
         NewVert = Mat4MultV4(WorldMatrix, NewVert);
+        NewVert = Mat4MultV4(ViewMatrix, NewVert);
         FaceVerts[j] = V3FromV4(NewVert);
       }
 
@@ -519,7 +530,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
       // Backface Culling
       if (BackFaceCull) {
-        v3 CameraRay = CameraPos - FaceVertA;
+        v3 CameraRay = V3(0.0f, 0.0f, 0.0f) - FaceVertA;
         // The DotProduct IS commutative!
         if (DotProduct(FaceNormal, CameraRay) <= 0) continue; // Skip projecting the vertices of this face as they are not visible
       }
@@ -620,6 +631,10 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     if (SyncTime > 0) {
       SDL_Delay(SyncTime);
     }
+
+    // Time between frames in seconds
+    DeltaTime = (f32)((SDL_GetTicks() - PrevFrameTime) / 1000.0f);
+
     PrevFrameTime = SDL_GetTicks();
   }
 

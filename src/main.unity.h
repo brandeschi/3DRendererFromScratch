@@ -36,3 +36,13 @@ typedef double f64;
 #include "upng.cpp"
 #include "mesh.cpp"
 #include "texture.cpp"
+
+// Types
+struct camera {
+  v3 position;
+  v3 direction;
+};
+struct light {
+  v3 direction;
+};
+

@@ -442,6 +442,23 @@ inline mat4 Mat4Projection(f32 AspectRatio, f32 FOV, f32 ZNear, f32 ZFar)
   return Result;
 }
 
+mat4 M4LookAt(v3 Eye, v3 Target, v3 Up) {
+  v3 Z = Target - Eye;
+  V3Normalize(&Z);
+  v3 X = CrossProduct(Up, Z);
+  V3Normalize(&X);
+  v3 Y = CrossProduct(Z, X);
+
+  mat4 Result = {
+    X.x,  X.y,  X.z,  -DotProduct(X, Eye),
+    Y.x,  Y.y,  Y.z,  -DotProduct(Y, Eye),
+    Z.x,  Z.y,  Z.z,  -DotProduct(Z, Eye),
+    0.0f, 0.0f, 0.0f, 1.0f,
+  };
+
+  return Result;
+}
+
 // Mixed Funcs
 inline v4 Mat4MultV4(mat4 Matrix, v4 Vector) {
   v4 Result = {0};
