@@ -1,1 +1,2 @@
 # 3DRendererFromScratch
+This codebase is the result of working through the following course: [3D Computer Graphics Programming](https://pikuma.com/courses/learn-3d-computer-graphics-programming). The core concepts taught in the course have been implemented with room left to clean up the code. The models used in the course have not been included but the renderer works with any Wavefront OBJ files. One thing I might update is how models and textures are loaded into the program.
