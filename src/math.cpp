@@ -271,7 +271,7 @@ inline v4 V4(f32 x, f32 y, f32 z, f32 w)
 }
 
 // Vector Casting
-inline v4 V3ToV4(v3 Vector) {
+inline v4 V4FromV3(v3 Vector) {
   v4 Result = {0};
   Result.x = Vector.x;
   Result.y = Vector.y;

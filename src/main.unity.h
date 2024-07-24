@@ -45,4 +45,21 @@ struct camera {
 struct light {
   v3 direction;
 };
-
+struct plane {
+  v3 point;
+  v3 normal;
+};
+#define MAX_POLY_VERTICES 10
+#define MAX_TRIANGLES_FROM_POLYGON 10
+struct polygon {
+  v3 vertices[MAX_POLY_VERTICES];
+  u32 number_of_vertices;
+};
+enum ViewFrustumPlanesEnum {
+  FP_LEFT,
+  FP_RIGHT,
+  FP_TOP,
+  FP_BOTTOM,
+  FP_NEAR,
+  FP_FAR
+};

@@ -32,6 +32,62 @@ v3 BarycentricWeights(v2 a, v2 b, v2 c, v2 p) {
   return Weights;
 }
 
+polygon CreatePolyFromTriangle(v3 *FaceVerts) {
+  polygon Result = {
+    { FaceVerts[0], FaceVerts[1], FaceVerts[2] },
+    3
+  };
+
+  return Result;
+}
+
+void ClipPolygon(polygon *Polygon, plane *VFPlanes) {
+  // For each plane of the view frustum
+  for (i32 i = 0; i < 6; ++i) {
+    v3 PlanePoint = VFPlanes[i].point;
+    v3 PlaneNormal = VFPlanes[i].normal;
+
+    polygon InsidePolygon = {0};
+    v3 *CurrentVertex = &Polygon->vertices[0];
+    v3 *PrevVertex = &Polygon->vertices[Polygon->number_of_vertices - 1];
+
+    f32 CurrentDot = 0.0f;
+    f32 PrevDot = DotProduct((*PrevVertex - PlanePoint), PlaneNormal);
+
+    while (CurrentVertex != &Polygon->vertices[Polygon->number_of_vertices]) {
+      // These tell us if the vertex is inside or outside of the frustum
+      // > 0  -> inside frustum
+      // < 0  -> outside frustum
+      // == 0 -> on plane
+      CurrentDot = DotProduct((*CurrentVertex - PlanePoint), PlaneNormal);
+      // Sign flip means the intersection point is needed to know what vertices to use
+      if (CurrentDot*PrevDot < 0) {
+        f32 InterpolationFactor = PrevDot / (PrevDot - CurrentDot); // t = dotQ1 / (dotQ1 - dotQ2)
+        v3 IntersectionPoint = *PrevVertex +
+                               InterpolationFactor*(*CurrentVertex - *PrevVertex); // Point = Q1 + t(Q2 - Q1)
+        InsidePolygon.vertices[InsidePolygon.number_of_vertices++] = V3(IntersectionPoint.x,
+                                                                        IntersectionPoint.y,
+                                                                        IntersectionPoint.z);
+
+      }
+      if (CurrentDot > 0) {
+        InsidePolygon.vertices[InsidePolygon.number_of_vertices++] = V3(CurrentVertex->x,
+                                                                        CurrentVertex->y,
+                                                                        CurrentVertex->z);
+      }
+
+      PrevVertex = CurrentVertex;
+      PrevDot = CurrentDot;
+      ++CurrentVertex;
+    }
+
+    for (u32 j = 0; j < InsidePolygon.number_of_vertices; ++j) {
+      Polygon->vertices[j] = InsidePolygon.vertices[j];
+    }
+    Polygon->number_of_vertices = InsidePolygon.number_of_vertices;
+  }
+}
+
 triangle *Triangles = 0;
 global mesh Mesh = {0};
 
@@ -49,7 +105,7 @@ global u32 PrevFrameTime = 0;
 global f32 DeltaTime = 0.0f;
 global i32 SyncTime = 0;
 global b32 BackFaceCull = true;
-global u32 RenderMode = FILLED;
+global u32 RenderMode = WIREFRAME | VERTICES;
 #define FPS 60
 #define TARGET_FRAME_TIME (1000 / FPS)
 global const u32 WIN_WIDTH = 1200;
@@ -84,7 +140,13 @@ static void DrawLine(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1, u32 Color
   f32 CurrentX = (f32)x0;
   f32 CurrentY = (f32)y0;
   for (i32 i = 0; i <= SideLength; ++i) {
-    ColorBuffer[(WIN_WIDTH*(u32)roundf(CurrentY)) + (u32)roundf(CurrentX)] = Color;
+    u32 RoundX = (u32)roundf(CurrentX);
+    u32 RoundY = (u32)roundf(CurrentY);
+    if (!(RoundX >= 0 && RoundX < WIN_WIDTH) ||
+      !(RoundY >= 0 && RoundY < WIN_HEIGHT)) {
+      continue;
+    }
+    ColorBuffer[(WIN_WIDTH*RoundY) + RoundX] = Color;
     CurrentX += XIncrement;
     CurrentY += YIncrement;
   }
@@ -305,12 +367,12 @@ static void DrawTexturedTriangle(u32 *ColorBuffer,
 }
 
 static void DrawRect(u32 *ColorBuffer, u32 x, u32 y, u32 w, u32 h, u32 Color) {
-  if (!(x >= 0 && x + w <= WIN_WIDTH) && !(y >= 0 && y + h <= WIN_HEIGHT)) {
-    return;
-  }
 
   for (u32 RectRow = y; RectRow < (y + h); ++RectRow) {
     for (u32 RectCol = x; RectCol < (x + w); ++RectCol) {
+      if (!(RectCol >= 0 && RectCol + w <= WIN_WIDTH) || !(RectRow >= 0 && RectRow + h <= WIN_HEIGHT)) {
+        return;
+      }
       ColorBuffer[(RectRow*WIN_WIDTH) + RectCol] = Color;
     }
   }
@@ -358,14 +420,14 @@ int main(int argc, char** argv) {
   }
   SDL_Texture *CBTexture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIN_WIDTH, WIN_HEIGHT);
 
-  // mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj");
-  // upng_t *CubeTexture = LoadPNGTextureFromFile("./assets/cube.png");
+  mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj");
+  upng_t *CubeTexture = LoadPNGTextureFromFile("./assets/cube.png");
   // mesh SphereMesh = LoadMeshFromObjFile("./assets/sphere.obj");
   // upng_t *SphereTexture = LoadPNGTextureFromFile("./assets/sphere.png");
   // mesh F22Mesh = LoadMeshFromObjFile("./assets/f22.obj");
   // upng_t *F22Texture = LoadPNGTextureFromFile("./assets/f22.png");
-  mesh F117Mesh = LoadMeshFromObjFile("./assets/f117.obj");
-  upng_t *F117Texture = LoadPNGTextureFromFile("./assets/f117.png");
+  // mesh F117Mesh = LoadMeshFromObjFile("./assets/f117.obj");
+  // upng_t *F117Texture = LoadPNGTextureFromFile("./assets/f117.png");
   // mesh CrabMesh = LoadMeshFromObjFile("./assets/crab.obj");
   // upng_t *CrabTexture = LoadPNGTextureFromFile("./assets/crab.png");
   // mesh DroneMesh = LoadMeshFromObjFile("./assets/drone.obj");
@@ -412,14 +474,14 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     array_push(Mesh.faces, face_index, CubeFaces[i]);
   }
 
-  // Mesh.vertices = CubeMesh.vertices;
-  // Mesh.faces = CubeMesh.faces;
+  Mesh.vertices = CubeMesh.vertices;
+  Mesh.faces = CubeMesh.faces;
   // Mesh.vertices = SphereMesh.vertices;
   // Mesh.faces = SphereMesh.faces;
   // Mesh.vertices = F22Mesh.vertices;
   // Mesh.faces = F22Mesh.faces;
-  Mesh.vertices = F117Mesh.vertices;
-  Mesh.faces = F117Mesh.faces;
+  // Mesh.vertices = F117Mesh.vertices;
+  // Mesh.faces = F117Mesh.faces;
   // Mesh.vertices = CrabMesh.vertices;
   // Mesh.faces = CrabMesh.faces;
   // Mesh.vertices = DroneMesh.vertices;
@@ -435,6 +497,15 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
   mat4 ProjectionMatrix = Mat4Projection(((f32)WIN_HEIGHT / (f32)WIN_WIDTH), FOV, ZNear, ZFar);
   light GLight = { 0.0f, 0.0f, 1.0f };
 
+  plane ViewFrustumPlanes[6] = {
+    { {0.0f, 0.0f, 0.0f},  {cosf(FOV / 2.0f),  0.0f,              sinf(FOV / 2.0f)} }, // LEFT
+    { {0.0f, 0.0f, 0.0f},  {-cosf(FOV / 2.0f), 0.0f,              sinf(FOV / 2.0f)} }, // RIGHT
+    { {0.0f, 0.0f, 0.0f},  {0.0f,              -cosf(FOV / 2.0f), sinf(FOV / 2.0f)} }, // TOP
+    { {0.0f, 0.0f, 0.0f},  {0.0f,              cosf(FOV / 2.0f),  sinf(FOV / 2.0f)} }, // BOTTOM
+    { {0.0f, 0.0f, ZNear}, {0.0f,              0.0f,              1.0f} },             // NEAR
+    { {0.0f, 0.0f, ZFar},  {0.0f,              0.0f,              -1.0f} },            // FAR
+  };
+
   AppRunning = true;
   while (AppRunning) {
     // INPUT
@@ -445,32 +516,38 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
           AppRunning = false;
         } break;
         case SDL_KEYDOWN: {
-          if(Event.key.keysym.sym == SDLK_ESCAPE) {
+          if (Event.key.keysym.sym == SDLK_ESCAPE) {
             AppRunning = false;
           }
-          if(Event.key.keysym.sym == SDLK_1) {
+          if (Event.key.keysym.sym == SDLK_1) {
             RenderMode = WIREFRAME | VERTICES;
           }
-          if(Event.key.keysym.sym == SDLK_2) {
+          if (Event.key.keysym.sym == SDLK_2) {
             RenderMode = WIREFRAME;
           }
-          if(Event.key.keysym.sym == SDLK_3) {
+          if (Event.key.keysym.sym == SDLK_3) {
             RenderMode = FILLED;
           }
-          if(Event.key.keysym.sym == SDLK_4) {
+          if (Event.key.keysym.sym == SDLK_4) {
             RenderMode = FILLED | WIREFRAME;
           }
-          if(Event.key.keysym.sym == SDLK_5) {
+          if (Event.key.keysym.sym == SDLK_5) {
             RenderMode = TEXTURED;
           }
-          if(Event.key.keysym.sym == SDLK_6) {
+          if (Event.key.keysym.sym == SDLK_6) {
             RenderMode = WIREFRAME | TEXTURED;
           }
-          if(Event.key.keysym.sym == SDLK_c) {
+          if (Event.key.keysym.sym == SDLK_c) {
             BackFaceCull = true;
           }
-          if(Event.key.keysym.sym == SDLK_d) {
+          if (Event.key.keysym.sym == SDLK_d) {
             BackFaceCull = false;
+          }
+          if (Event.key.keysym.sym == SDLK_UP) {
+            Camera.position.y += 2.0f*DeltaTime;
+          }
+          if (Event.key.keysym.sym == SDLK_DOWN) {
+            Camera.position.y -= 2.0f*DeltaTime;
           }
         } break;
       }
@@ -481,17 +558,17 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
     // Mesh.scale.x += 0.002f;
 
-    Mesh.rotation.x += 0.5f*DeltaTime;
+    // Mesh.rotation.x += 0.5f*DeltaTime;
     // Mesh.rotation.y += 5.0f*DeltaTime;
     // Mesh.rotation.z += 5.0f*DeltaTime;
 
     // Mesh.translation.x += 5.0f*DeltaTime;
     Mesh.translation.z = 5.0f;
 
-    Camera.position.x += 0.3f*DeltaTime;
-    Camera.position.y += 0.3f*DeltaTime;
+    // Camera.position.x += 0.3f*DeltaTime;
+    // Camera.position.y += 0.3f*DeltaTime;
 
-    v3 Target = Mesh.translation;
+    v3 Target = Camera.position + Camera.direction;
     mat4 ViewMatrix = M4LookAt(Camera.position, Target, { 0.0f, 1.0f, 0.0f });
 
     mat4 ScaleMatrix = Mat4Scale(Mesh.scale.x, Mesh.scale.y, Mesh.scale.z);
@@ -510,7 +587,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
       // Transform work
       for (u32 j = 0; j < arr_count(FaceVerts); ++j) {
-        v4 NewVert = V3ToV4(FaceVerts[j]);
+        v4 NewVert = V4FromV3(FaceVerts[j]);
         // ORDER MATTERS!!!!! the below is really S*R*T
         // Builds like XRot*Scale -> YRot*(XRot*Scale) -> ZRot*(YRot*XRot*Scale) -> Translate*(ZRot*YRot*XRot*Scale)
         mat4 WorldMatrix = TranslationMatrix*ZRotationMatrix*YRotationMatrix*XRotationMatrix*ScaleMatrix;
@@ -536,33 +613,50 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
         if (DotProduct(FaceNormal, CameraRay) <= 0) continue; // Skip projecting the vertices of this face as they are not visible
       }
 
-      triangle CurrentTriangle = {0};
-      // Projection work on each vertex of triangle
-      for (u32 j = 0; j < arr_count(FaceVerts); ++j) {
-        v4 ProjectedPoint = Mat4MultV4(ProjectionMatrix, V3ToV4(FaceVerts[j]));
-        // Perspective divide
-        if (ProjectedPoint.w != 0) {
-          ProjectedPoint.x /= ProjectedPoint.w;
-          ProjectedPoint.y /= ProjectedPoint.w;
-          ProjectedPoint.z /= ProjectedPoint.w;
+      // Clipping
+      polygon CurrentPolygon = CreatePolyFromTriangle(FaceVerts);
+      ClipPolygon(&CurrentPolygon, ViewFrustumPlanes);
+
+      triangle TrianglesFromCurrPoly[MAX_TRIANGLES_FROM_POLYGON];
+      i32 TrianglesFromPolyCount = CurrentPolygon.number_of_vertices - 2;
+      {
+        for (i32 Index = 0; Index < TrianglesFromPolyCount; ++Index) {
+          TrianglesFromCurrPoly[Index].vertices[0] = V4FromV3(CurrentPolygon.vertices[0]);
+          TrianglesFromCurrPoly[Index].vertices[1] = V4FromV3(CurrentPolygon.vertices[Index + 1]);
+          TrianglesFromCurrPoly[Index].vertices[2] = V4FromV3(CurrentPolygon.vertices[Index + 2]);
         }
 
-        ProjectedPoint.x *= (f32)(WIN_WIDTH / 2);
-        ProjectedPoint.y *= (f32)(WIN_HEIGHT / 2);
-
-        ProjectedPoint.y *= -1.0f;
-
-        ProjectedPoint.x += (f32)(WIN_WIDTH / 2);
-        ProjectedPoint.y += (f32)(WIN_HEIGHT / 2);
-        CurrentTriangle.vertices[j] = V4(ProjectedPoint.x, ProjectedPoint.y, ProjectedPoint.z, ProjectedPoint.w);
       }
 
-      CurrentTriangle.texture_coords[0] = { Mesh.faces[i].a_uv.u, Mesh.faces[i].a_uv.v };
-      CurrentTriangle.texture_coords[1] = { Mesh.faces[i].b_uv.u, Mesh.faces[i].b_uv.v };
-      CurrentTriangle.texture_coords[2] = { Mesh.faces[i].c_uv.u, Mesh.faces[i].c_uv.v };
-      f32 AlignmentPercentage = -DotProduct(FaceNormal, GLight.direction);
-      CurrentTriangle.color = ColorFromLightIntensity(Mesh.faces[i].color, AlignmentPercentage);
-      array_push(Triangles, triangle, CurrentTriangle);
+      for (i32 Index = 0; Index < TrianglesFromPolyCount; ++Index) {
+        triangle CurrentTriangle = TrianglesFromCurrPoly[Index];
+        // Projection work on each vertex of triangle
+        for (u32 VertexIndex = 0; VertexIndex < arr_count(CurrentTriangle.vertices); ++VertexIndex) {
+          v4 ProjectedPoint = Mat4MultV4(ProjectionMatrix, CurrentTriangle.vertices[VertexIndex]);
+          // Perspective divide
+          if (ProjectedPoint.w != 0) {
+            ProjectedPoint.x /= ProjectedPoint.w;
+            ProjectedPoint.y /= ProjectedPoint.w;
+            ProjectedPoint.z /= ProjectedPoint.w;
+          }
+
+          ProjectedPoint.x *= (f32)(WIN_WIDTH / 2);
+          ProjectedPoint.y *= (f32)(WIN_HEIGHT / 2);
+
+          ProjectedPoint.y *= -1.0f;
+
+          ProjectedPoint.x += (f32)(WIN_WIDTH / 2);
+          ProjectedPoint.y += (f32)(WIN_HEIGHT / 2);
+          CurrentTriangle.vertices[VertexIndex] = ProjectedPoint;
+        }
+
+        CurrentTriangle.texture_coords[0] = { Mesh.faces[i].a_uv.u, Mesh.faces[i].a_uv.v };
+        CurrentTriangle.texture_coords[1] = { Mesh.faces[i].b_uv.u, Mesh.faces[i].b_uv.v };
+        CurrentTriangle.texture_coords[2] = { Mesh.faces[i].c_uv.u, Mesh.faces[i].c_uv.v };
+        f32 AlignmentPercentage = -DotProduct(FaceNormal, GLight.direction);
+        CurrentTriangle.color = ColorFromLightIntensity(Mesh.faces[i].color, AlignmentPercentage);
+        array_push(Triangles, triangle, CurrentTriangle);
+      }
     }
 
     // RENDER
