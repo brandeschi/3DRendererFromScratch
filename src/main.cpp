@@ -495,21 +495,24 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
   // Mesh.faces = DroneMesh.faces;
 
   camera Camera = {
-    { 0.0f, -1.0f, 0.0f },
+    { 0.0f, 0.0f, 0.0f },
     { 0.0f, 0.0f, 1.0f },
     0.0f
   };
-  f32 FOV = PI32 / 3.0f;
+  f32 AspectRatioX = (f32)WIN_WIDTH / (f32)WIN_HEIGHT;
+  f32 AspectRatioY = (f32)WIN_HEIGHT / (f32)WIN_WIDTH;
+  f32 FOVX = PI32 / 2.0f;
+  f32 FOVY = 2*atanf(tanf(FOVX / 2.0f)*AspectRatioY);
   f32 ZNear = 0.1f;
   f32 ZFar = 100.0f;
-  mat4 ProjectionMatrix = Mat4Projection(((f32)WIN_HEIGHT / (f32)WIN_WIDTH), FOV, ZNear, ZFar);
+  mat4 ProjectionMatrix = Mat4Projection(AspectRatioY, FOVY, ZNear, ZFar);
   light GLight = { 0.0f, 0.0f, 1.0f };
 
   plane ViewFrustumPlanes[6] = {
-    { {0.0f, 0.0f, 0.0f},  {cosf(FOV / 2.0f),  0.0f,              sinf(FOV / 2.0f)} }, // LEFT
-    { {0.0f, 0.0f, 0.0f},  {-cosf(FOV / 2.0f), 0.0f,              sinf(FOV / 2.0f)} }, // RIGHT
-    { {0.0f, 0.0f, 0.0f},  {0.0f,              -cosf(FOV / 2.0f), sinf(FOV / 2.0f)} }, // TOP
-    { {0.0f, 0.0f, 0.0f},  {0.0f,              cosf(FOV / 2.0f),  sinf(FOV / 2.0f)} }, // BOTTOM
+    { {0.0f, 0.0f, 0.0f},  {cosf(FOVX / 2.0f),  0.0f,              sinf(FOVX / 2.0f)} }, // LEFT
+    { {0.0f, 0.0f, 0.0f},  {-cosf(FOVX / 2.0f), 0.0f,              sinf(FOVX / 2.0f)} }, // RIGHT
+    { {0.0f, 0.0f, 0.0f},  {0.0f,              -cosf(FOVY / 2.0f), sinf(FOVY / 2.0f)} }, // TOP
+    { {0.0f, 0.0f, 0.0f},  {0.0f,              cosf(FOVY / 2.0f),  sinf(FOVY / 2.0f)} }, // BOTTOM
     { {0.0f, 0.0f, ZNear}, {0.0f,              0.0f,              1.0f} },             // NEAR
     { {0.0f, 0.0f, ZFar},  {0.0f,              0.0f,              -1.0f} },            // FAR
   };
