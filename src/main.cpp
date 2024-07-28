@@ -32,7 +32,7 @@ v3 BarycentricWeights(v2 a, v2 b, v2 c, v2 p) {
   return Weights;
 }
 
-polygon CreatePolyFromTriangle(v3 *FaceVerts) {
+polygon CreatePolyFromTriangle(v3 FaceVerts[]) {
   polygon Result = {
     { FaceVerts[0], FaceVerts[1], FaceVerts[2] },
     3
@@ -81,7 +81,7 @@ void ClipPolygon(polygon *Polygon, plane *VFPlanes) {
       ++CurrentVertex;
     }
 
-    for (u32 j = 0; j < InsidePolygon.number_of_vertices; ++j) {
+    for (i32 j = 0; j < InsidePolygon.number_of_vertices; ++j) {
       Polygon->vertices[j] = InsidePolygon.vertices[j];
     }
     Polygon->number_of_vertices = InsidePolygon.number_of_vertices;
@@ -133,20 +133,18 @@ static void DrawLine(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1, u32 Color
   i32 DeltaX = x1 - x0;
   i32 DeltaY = y1 - y0;
 
-  i32 SideLength = abs(DeltaX) >= abs(DeltaY) ? abs(DeltaX) : abs(DeltaY);
+  i32 SideLength = (abs(DeltaX) >= abs(DeltaY)) ? abs(DeltaX) : abs(DeltaY);
   f32 XIncrement = (f32)DeltaX / (f32)SideLength;
   f32 YIncrement = (f32)DeltaY / (f32)SideLength;
 
   f32 CurrentX = (f32)x0;
   f32 CurrentY = (f32)y0;
   for (i32 i = 0; i <= SideLength; ++i) {
-    u32 RoundX = (u32)roundf(CurrentX);
-    u32 RoundY = (u32)roundf(CurrentY);
-    if (!(RoundX >= 0 && RoundX < WIN_WIDTH) ||
-      !(RoundY >= 0 && RoundY < WIN_HEIGHT)) {
-      continue;
+    i32 RoundX = (i32)roundf(CurrentX);
+    i32 RoundY = (i32)roundf(CurrentY);
+    if ((RoundX >= 0 && RoundX < WIN_WIDTH) && (RoundY >=0 && RoundY < WIN_HEIGHT)) {
+      ColorBuffer[(WIN_WIDTH*RoundY) + RoundX] = Color;
     }
-    ColorBuffer[(WIN_WIDTH*RoundY) + RoundX] = Color;
     CurrentX += XIncrement;
     CurrentY += YIncrement;
   }
@@ -198,6 +196,9 @@ static void DrawFilledTriangle(u32 *ColorBuffer,
       }
 
       for (i32 Col = (i32)StartX; Col < (i32)EndX; ++Col) {
+        if ((Col < 0 || Col >= WIN_WIDTH) || (Row < 0 || Row >= WIN_HEIGHT)) {
+          continue;
+        }
         v3 Weights = BarycentricWeights(V2(VertexA.x, VertexA.y),
                                         V2(VertexB.x, VertexB.y),
                                         V2(VertexC.x, VertexC.y),
@@ -230,6 +231,9 @@ static void DrawFilledTriangle(u32 *ColorBuffer,
       }
 
       for (i32 Col = (i32)StartX; Col < (i32)EndX; ++Col) {
+        if ((Col < 0 || Col >= WIN_WIDTH) || (Row < 0 || Row >= WIN_HEIGHT)) {
+          continue;
+        }
         v3 Weights = BarycentricWeights(V2(VertexA.x, VertexA.y),
                                         V2(VertexB.x, VertexB.y),
                                         V2(VertexC.x, VertexC.y),
@@ -339,7 +343,9 @@ static void DrawTexturedTriangle(u32 *ColorBuffer,
       }
 
       for (i32 Col = (i32)StartX; Col < (i32)EndX; ++Col) {
-        DrawTexel(ColorBuffer, Col, Row, VertexA, VertexB, VertexC, texture, uvs);
+        if ((Col >= 0 && Col < WIN_WIDTH) && (Row >= 0 && Row < WIN_HEIGHT)) {
+          DrawTexel(ColorBuffer, Col, Row, VertexA, VertexB, VertexC, texture, uvs);
+        }
       }
     }
   }
@@ -360,7 +366,9 @@ static void DrawTexturedTriangle(u32 *ColorBuffer,
       }
 
       for (i32 Col = (i32)StartX; Col < (i32)EndX; ++Col) {
-        DrawTexel(ColorBuffer, Col, Row, VertexA, VertexB, VertexC, texture, uvs);
+        if ((Col >= 0 && Col < WIN_WIDTH) && (Row >= 0 && Row < WIN_HEIGHT)) {
+          DrawTexel(ColorBuffer, Col, Row, VertexA, VertexB, VertexC, texture, uvs);
+        }
       }
     }
   }
@@ -370,10 +378,9 @@ static void DrawRect(u32 *ColorBuffer, u32 x, u32 y, u32 w, u32 h, u32 Color) {
 
   for (u32 RectRow = y; RectRow < (y + h); ++RectRow) {
     for (u32 RectCol = x; RectCol < (x + w); ++RectCol) {
-      if (!(RectCol >= 0 && RectCol + w <= WIN_WIDTH) || !(RectRow >= 0 && RectRow + h <= WIN_HEIGHT)) {
-        return;
+      if (RectCol >= 0 && RectCol < WIN_WIDTH && RectRow >=0 && RectRow < WIN_HEIGHT) {
+        ColorBuffer[(RectRow*WIN_WIDTH) + RectCol] = Color;
       }
-      ColorBuffer[(RectRow*WIN_WIDTH) + RectCol] = Color;
     }
   }
 }
@@ -488,8 +495,9 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
   // Mesh.faces = DroneMesh.faces;
 
   camera Camera = {
-    { 0.0f, 0.0f, 0.0f },
+    { 0.0f, -1.0f, 0.0f },
     { 0.0f, 0.0f, 1.0f },
+    0.0f
   };
   f32 FOV = PI32 / 3.0f;
   f32 ZNear = 0.1f;
@@ -549,6 +557,12 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
           if (Event.key.keysym.sym == SDLK_DOWN) {
             Camera.position.y -= 2.0f*DeltaTime;
           }
+          if (Event.key.keysym.sym == SDLK_LEFT) {
+            Camera.yaw += 1.0f*DeltaTime;
+          }
+          if (Event.key.keysym.sym == SDLK_RIGHT) {
+            Camera.yaw -= 1.0f*DeltaTime;
+          }
         } break;
       }
     }
@@ -568,7 +582,10 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     // Camera.position.x += 0.3f*DeltaTime;
     // Camera.position.y += 0.3f*DeltaTime;
 
-    v3 Target = Camera.position + Camera.direction;
+    v3 Target = { 0.0f, 0.0f, 1.0f };
+    mat4 CameraYawRot = Mat4RotateY(Camera.yaw);
+    Camera.direction = V3FromV4(Mat4MultV4(CameraYawRot, V4FromV3(Target)));
+    Target = Camera.position + Camera.direction;
     mat4 ViewMatrix = M4LookAt(Camera.position, Target, { 0.0f, 1.0f, 0.0f });
 
     mat4 ScaleMatrix = Mat4Scale(Mesh.scale.x, Mesh.scale.y, Mesh.scale.z);
@@ -703,16 +720,18 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     }
     if (RenderMode & WIREFRAME) {
       for (i32 i = 0; i < array_length(Triangles); ++i) {
-        DrawLine(ColorBuff, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, 0xFF00FF00);
-        DrawLine(ColorBuff, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, 0xFF00FF00);
-        DrawLine(ColorBuff, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, 0xFF00FF00);
+        DrawLine(ColorBuff, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, 0xFFFF8800);
+        DrawLine(ColorBuff, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, 0xFFFF8800);
+        DrawLine(ColorBuff, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, 0xFFFF8800);
       }
     }
     if (RenderMode & VERTICES) {
+      i32 RectSideLength = 4;
+      i32 HalfRectSideLength = RectSideLength / 2;
       for (i32 i = 0; i < array_length(Triangles); ++i) {
-        DrawRect(ColorBuff, (u32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, 4, 4, 0xFFFF0000);
-        DrawRect(ColorBuff, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, 4, 4, 0xFFFF0000);
-        DrawRect(ColorBuff, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, 4, 4, 0xFFFF0000);
+        DrawRect(ColorBuff, (u32)Triangles[i].vertices[0].x - HalfRectSideLength, (i32)Triangles[i].vertices[0].y - HalfRectSideLength, RectSideLength, RectSideLength, 0xFFFFFF00);
+        DrawRect(ColorBuff, (i32)Triangles[i].vertices[1].x - HalfRectSideLength, (i32)Triangles[i].vertices[1].y - HalfRectSideLength, RectSideLength, RectSideLength, 0xFFFFFF00);
+        DrawRect(ColorBuff, (i32)Triangles[i].vertices[2].x - HalfRectSideLength, (i32)Triangles[i].vertices[2].y - HalfRectSideLength, RectSideLength, RectSideLength, 0xFFFFFF00);
       }
     }
 

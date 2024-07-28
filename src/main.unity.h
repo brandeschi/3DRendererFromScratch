@@ -41,6 +41,7 @@ typedef double f64;
 struct camera {
   v3 position;
   v3 direction;
+  f32 yaw;
 };
 struct light {
   v3 direction;
@@ -53,7 +54,7 @@ struct plane {
 #define MAX_TRIANGLES_FROM_POLYGON 10
 struct polygon {
   v3 vertices[MAX_POLY_VERTICES];
-  u32 number_of_vertices;
+  i32 number_of_vertices;
 };
 enum ViewFrustumPlanesEnum {
   FP_LEFT,
