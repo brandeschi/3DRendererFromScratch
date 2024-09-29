@@ -32,8 +32,9 @@ v3 BarycentricWeights(v2 a, v2 b, v2 c, v2 p) {
   return Weights;
 }
 
-polygon CreatePolyFromTriangle(v3 FaceVerts[]) {
+polygon CreatePolyFromTriangle(v3 FaceVerts[], v2 UVs[]) {
   polygon Result = {
+    { UVs[0], UVs[1], UVs[2] },
     { FaceVerts[0], FaceVerts[1], FaceVerts[2] },
     3
   };
@@ -50,6 +51,8 @@ void ClipPolygon(polygon *Polygon, plane *VFPlanes) {
     polygon InsidePolygon = {0};
     v3 *CurrentVertex = &Polygon->vertices[0];
     v3 *PrevVertex = &Polygon->vertices[Polygon->number_of_vertices - 1];
+    v2 *CurrentUV = &Polygon->uvs[0];
+    v2 *PrevUV = &Polygon->uvs[Polygon->number_of_vertices - 1];
 
     f32 CurrentDot = 0.0f;
     f32 PrevDot = DotProduct((*PrevVertex - PlanePoint), PlaneNormal);
@@ -65,24 +68,36 @@ void ClipPolygon(polygon *Polygon, plane *VFPlanes) {
         f32 InterpolationFactor = PrevDot / (PrevDot - CurrentDot); // t = dotQ1 / (dotQ1 - dotQ2)
         v3 IntersectionPoint = *PrevVertex +
                                InterpolationFactor*(*CurrentVertex - *PrevVertex); // Point = Q1 + t(Q2 - Q1)
-        InsidePolygon.vertices[InsidePolygon.number_of_vertices++] = V3(IntersectionPoint.x,
-                                                                        IntersectionPoint.y,
-                                                                        IntersectionPoint.z);
+        InsidePolygon.vertices[InsidePolygon.number_of_vertices] = V3(IntersectionPoint.x,
+                                                                      IntersectionPoint.y,
+                                                                      IntersectionPoint.z);
+
+        v2 LerpedTextureCoord = *PrevUV + (InterpolationFactor*(*CurrentUV - *PrevUV));
+        InsidePolygon.uvs[InsidePolygon.number_of_vertices] = V2(LerpedTextureCoord.u,
+                                                                 LerpedTextureCoord.v);
+        ++InsidePolygon.number_of_vertices;
 
       }
       if (CurrentDot > 0) {
-        InsidePolygon.vertices[InsidePolygon.number_of_vertices++] = V3(CurrentVertex->x,
-                                                                        CurrentVertex->y,
-                                                                        CurrentVertex->z);
+        InsidePolygon.vertices[InsidePolygon.number_of_vertices] = V3(CurrentVertex->x,
+                                                                      CurrentVertex->y,
+                                                                      CurrentVertex->z);
+
+        InsidePolygon.uvs[InsidePolygon.number_of_vertices] = V2(CurrentUV->u,
+                                                                 CurrentUV->v);
+        ++InsidePolygon.number_of_vertices;
       }
 
       PrevVertex = CurrentVertex;
-      PrevDot = CurrentDot;
       ++CurrentVertex;
+      PrevUV = CurrentUV;
+      ++CurrentUV;
+      PrevDot = CurrentDot;
     }
 
     for (i32 j = 0; j < InsidePolygon.number_of_vertices; ++j) {
       Polygon->vertices[j] = InsidePolygon.vertices[j];
+      Polygon->uvs[j] = InsidePolygon.uvs[j];
     }
     Polygon->number_of_vertices = InsidePolygon.number_of_vertices;
   }
@@ -604,6 +619,10 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
       FaceVerts[0] = Mesh.vertices[Mesh.faces[i].a - 1];
       FaceVerts[1] = Mesh.vertices[Mesh.faces[i].b - 1];
       FaceVerts[2] = Mesh.vertices[Mesh.faces[i].c - 1];
+      v2 UVs[3];
+      UVs[0] = Mesh.faces[i].a_uv;
+      UVs[1] = Mesh.faces[i].b_uv;
+      UVs[2] = Mesh.faces[i].c_uv;
 
       // Transform work
       for (u32 j = 0; j < arr_count(FaceVerts); ++j) {
@@ -634,7 +653,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
       }
 
       // Clipping
-      polygon CurrentPolygon = CreatePolyFromTriangle(FaceVerts);
+      polygon CurrentPolygon = CreatePolyFromTriangle(FaceVerts, UVs);
       ClipPolygon(&CurrentPolygon, ViewFrustumPlanes);
 
       triangle TrianglesFromCurrPoly[MAX_TRIANGLES_FROM_POLYGON];
@@ -644,6 +663,9 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
           TrianglesFromCurrPoly[Index].vertices[0] = V4FromV3(CurrentPolygon.vertices[0]);
           TrianglesFromCurrPoly[Index].vertices[1] = V4FromV3(CurrentPolygon.vertices[Index + 1]);
           TrianglesFromCurrPoly[Index].vertices[2] = V4FromV3(CurrentPolygon.vertices[Index + 2]);
+          TrianglesFromCurrPoly[Index].texture_coords[0] = CurrentPolygon.uvs[0];
+          TrianglesFromCurrPoly[Index].texture_coords[1] = CurrentPolygon.uvs[Index + 1];
+          TrianglesFromCurrPoly[Index].texture_coords[2] = CurrentPolygon.uvs[Index + 2];
         }
 
       }
@@ -670,9 +692,6 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
           CurrentTriangle.vertices[VertexIndex] = ProjectedPoint;
         }
 
-        CurrentTriangle.texture_coords[0] = { Mesh.faces[i].a_uv.u, Mesh.faces[i].a_uv.v };
-        CurrentTriangle.texture_coords[1] = { Mesh.faces[i].b_uv.u, Mesh.faces[i].b_uv.v };
-        CurrentTriangle.texture_coords[2] = { Mesh.faces[i].c_uv.u, Mesh.faces[i].c_uv.v };
         f32 AlignmentPercentage = -DotProduct(FaceNormal, GLight.direction);
         CurrentTriangle.color = ColorFromLightIntensity(Mesh.faces[i].color, AlignmentPercentage);
         array_push(Triangles, triangle, CurrentTriangle);

@@ -28,7 +28,7 @@ typedef double f64;
 
 #define global static
 #define neo_assert(expression) if (!(expression)) { *(int *)0 = 0; }
-#define arr_count(array) (sizeof(array) / sizeof((array)[0]))
+#define arr_count(array) (sizeof((array)) / sizeof((array)[0]))
 
 // Sub TU
 #include "math.cpp"
@@ -53,6 +53,7 @@ struct plane {
 #define MAX_POLY_VERTICES 10
 #define MAX_TRIANGLES_FROM_POLYGON 10
 struct polygon {
+  v2 uvs[MAX_POLY_VERTICES];
   v3 vertices[MAX_POLY_VERTICES];
   i32 number_of_vertices;
 };
