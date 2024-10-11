@@ -127,22 +127,6 @@ global const u32 WIN_WIDTH = 1200;
 global const u32 WIN_HEIGHT = 900;
 global const f32 FOV_FACTOR = 640.0f;
 
-inline void SwapI32(i32 *a, i32 *b) {
-  i32 temp = *a;
-  *a = *b;
-  *b = temp;
-}
-inline void SwapF32(f32 *a, f32 *b) {
-  f32 temp = *a;
-  *a = *b;
-  *b = temp;
-}
-inline void SwapTriangles(triangle *a, triangle *b) {
-  triangle temp = *a;
-  *a = *b;
-  *b = temp;
-}
-
 // Draw Funcs
 static void DrawLine(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1, u32 Color) {
   i32 DeltaX = x1 - x0;
@@ -173,22 +157,22 @@ static void DrawFilledTriangle(u32 *ColorBuffer,
   // NOTE: This uses the Flat-top/Flat-bottom method
   // Ensure y's are sorted with y0 being the smallest and y2 being the largest
   if (y0 > y1) {
-    SwapI32(&y0, &y1);
-    SwapI32(&x0, &x1);
-    SwapF32(&z0, &z1);
-    SwapF32(&w0, &w1);
+    Swap(s32, y0, y1);
+    Swap(s32, x0, x1);
+    Swap(f32, z0, z1);
+    Swap(f32, w0, w1);
   }
   if (y1 > y2) {
-    SwapI32(&y1, &y2);
-    SwapI32(&x1, &x2);
-    SwapF32(&z1, &z2);
-    SwapF32(&w1, &w2);
+    Swap(s32, y1, y2);
+    Swap(s32, x1, x2);
+    Swap(f32, z1, z2);
+    Swap(f32, w1, w2);
   }
   if (y0 > y1) {
-    SwapI32(&y0, &y1);
-    SwapI32(&x0, &x1);
-    SwapF32(&z0, &z1);
-    SwapF32(&w0, &w1);
+    Swap(s32, y0, y1);
+    Swap(s32, x0, x1);
+    Swap(f32, z0, z1);
+    Swap(f32, w0, w1);
   }
 
   v4 VertexA = V4((f32)x0, (f32)y0, z0, w0);
@@ -207,7 +191,7 @@ static void DrawFilledTriangle(u32 *ColorBuffer,
       i32 StartX = (i32)(x1 + (Row - y1)*InvSlope1);
       i32 EndX = (i32)(x0 + (Row - y0)*InvSlope2);
       if (EndX < StartX) {
-        SwapI32(&StartX, &EndX);
+        Swap(s32, StartX, EndX);
       }
 
       for (i32 Col = (i32)StartX; Col < (i32)EndX; ++Col) {
@@ -242,7 +226,7 @@ static void DrawFilledTriangle(u32 *ColorBuffer,
       i32 StartX = (i32)(x1 + (Row - y1)*InvSlope1);
       i32 EndX = (i32)(x0 + (Row - y0)*InvSlope2);
       if (EndX < StartX) {
-        SwapI32(&StartX, &EndX);
+        Swap(s32, StartX, EndX);
       }
 
       for (i32 Col = (i32)StartX; Col < (i32)EndX; ++Col) {
@@ -306,28 +290,28 @@ static void DrawTexturedTriangle(u32 *ColorBuffer,
   // NOTE: This uses the Flat-top/Flat-bottom method
   // Ensure y's are sorted with y0 being the smallest and y2 being the largest
   if (y0 > y1) {
-    SwapI32(&x0, &x1);
-    SwapI32(&y0, &y1);
-    SwapF32(&z0, &z1);
-    SwapF32(&w0, &w1);
-    SwapF32(&uvs[0].v, &uvs[1].v);
-    SwapF32(&uvs[0].u, &uvs[1].u);
+    Swap(s32, x0, x1);
+    Swap(s32, y0, y1);
+    Swap(f32, z0, z1);
+    Swap(f32, w0, w1);
+    Swap(f32, uvs[0].v, uvs[1].v);
+    Swap(f32, uvs[0].u, uvs[1].u);
   }
   if (y1 > y2) {
-    SwapI32(&x1, &x2);
-    SwapI32(&y1, &y2);
-    SwapF32(&z1, &z2);
-    SwapF32(&w1, &w2);
-    SwapF32(&uvs[1].v, &uvs[2].v);
-    SwapF32(&uvs[1].u, &uvs[2].u);
+    Swap(s32, x1, x2);
+    Swap(s32, y1, y2);
+    Swap(f32, z1, z2);
+    Swap(f32, w1, w2);
+    Swap(f32, uvs[1].v, uvs[2].v);
+    Swap(f32, uvs[1].u, uvs[2].u);
   }
   if (y0 > y1) {
-    SwapI32(&x0, &x1);
-    SwapI32(&y0, &y1);
-    SwapF32(&z0, &z1);
-    SwapF32(&w0, &w1);
-    SwapF32(&uvs[0].v, &uvs[1].v);
-    SwapF32(&uvs[0].u, &uvs[1].u);
+    Swap(s32, x0, x1);
+    Swap(s32, y0, y1);
+    Swap(f32, z0, z1);
+    Swap(f32, w0, w1);
+    Swap(f32, uvs[0].v, uvs[1].v);
+    Swap(f32, uvs[0].u, uvs[1].u);
   }
 
   // Flipping the V coord of the texture as they go from bottom left instead of top left
@@ -354,7 +338,7 @@ static void DrawTexturedTriangle(u32 *ColorBuffer,
       i32 StartX = (i32)(x1 + (Row - y1)*InvSlope1);
       i32 EndX = (i32)(x0 + (Row - y0)*InvSlope2);
       if (EndX < StartX) {
-        SwapI32(&StartX, &EndX);
+        Swap(s32, StartX, EndX);
       }
 
       for (i32 Col = (i32)StartX; Col < (i32)EndX; ++Col) {
@@ -377,7 +361,7 @@ static void DrawTexturedTriangle(u32 *ColorBuffer,
       i32 StartX = (i32)(x1 + (Row - y1)*InvSlope1);
       i32 EndX = (i32)(x0 + (Row - y0)*InvSlope2);
       if (EndX < StartX) {
-        SwapI32(&StartX, &EndX);
+        Swap(s32, StartX, EndX);
       }
 
       for (i32 Col = (i32)StartX; Col < (i32)EndX; ++Col) {

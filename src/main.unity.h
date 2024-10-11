@@ -12,6 +12,10 @@ typedef int8_t i8;
 typedef int16_t i16;
 typedef int32_t i32;
 typedef int64_t i64;
+typedef i8 s8;
+typedef i16 s16;
+typedef i32 s32;
+typedef i64 s64;
 
 typedef i32 b32;
 
@@ -26,9 +30,11 @@ typedef mem_index ums;
 typedef float f32;
 typedef double f64;
 
+// Helper Macros
 #define global static
 #define neo_assert(expression) if (!(expression)) { *(int *)0 = 0; }
 #define arr_count(array) (sizeof((array)) / sizeof((array)[0]))
+#define Swap(T,a,b) do{T temp__ = a; a = b; b = temp__;}while(0)
 
 // Sub TU
 #include "math.cpp"
