@@ -1,9 +1,33 @@
 #include "main.unity.h"
 
-f32 *DepthBuff;
+internal triangle *Triangles = 0;
+internal mesh Mesh = {0};
+
+// Per bit option for rendering mode
+// TODO: Make this a composiable system using XOR?
+enum RenderModeEnum {
+  WIREFRAME = 1 << 0,
+  FILLED = 1 << 1,
+  VERTICES = 1 << 2,
+  TEXTURED = 1 << 3,
+};
+
+internal b32 AppRunning = false;
+internal u32 PrevFrameTime = 0;
+internal f32 DeltaTime = 0.0f;
+internal i32 SyncTime = 0;
+internal b32 BackFaceCull = true;
+internal u32 RenderMode = WIREFRAME | VERTICES;
+#define FPS 60
+#define TARGET_FRAME_TIME (1000 / FPS)
+
+internal f32 *DepthBuff = 0;
+internal u32 *ColorBuff = 0;
+global const u32 WIN_WIDTH = 1200;
+global const u32 WIN_HEIGHT = 900;
+global const f32 FOV_FACTOR = 640.0f;
 
 inline u32 ColorFromLightIntensity(u32 Color, f32 Percentage) {
-  // TODO: SafeTruncate??
   if (Percentage < 0.0f) Percentage = 0.0f;
   if (Percentage > 1.0f) Percentage = 1.0f;
 
@@ -44,9 +68,9 @@ polygon CreatePolyFromTriangle(v3 FaceVerts[], v2 UVs[]) {
 
 void ClipPolygon(polygon *Polygon, plane *VFPlanes) {
   // For each plane of the view frustum
-  for (i32 i = 0; i < 6; ++i) {
-    v3 PlanePoint = VFPlanes[i].point;
-    v3 PlaneNormal = VFPlanes[i].normal;
+  for (i32 PlaneIdx = 0; PlaneIdx < 6; ++PlaneIdx) {
+    v3 PlanePoint = VFPlanes[PlaneIdx].point;
+    v3 PlaneNormal = VFPlanes[PlaneIdx].normal;
 
     polygon InsidePolygon = {0};
     v3 *CurrentVertex = &Polygon->vertices[0];
@@ -103,32 +127,9 @@ void ClipPolygon(polygon *Polygon, plane *VFPlanes) {
   }
 }
 
-triangle *Triangles = 0;
-global mesh Mesh = {0};
-
-// Per bit option for rendering mode
-// TODO: Make this a composiable system using XOR?
-enum RenderModeEnum {
-  WIREFRAME = 1 << 0,
-  FILLED = 1 << 1,
-  VERTICES = 1 << 2,
-  TEXTURED = 1 << 3,
-};
-
-global b32 AppRunning = false;
-global u32 PrevFrameTime = 0;
-global f32 DeltaTime = 0.0f;
-global i32 SyncTime = 0;
-global b32 BackFaceCull = true;
-global u32 RenderMode = WIREFRAME | VERTICES;
-#define FPS 60
-#define TARGET_FRAME_TIME (1000 / FPS)
-global const u32 WIN_WIDTH = 1200;
-global const u32 WIN_HEIGHT = 900;
-global const f32 FOV_FACTOR = 640.0f;
 
 // Draw Funcs
-static void DrawLine(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1, u32 Color) {
+internal void DrawLine(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1, u32 Color) {
   i32 DeltaX = x1 - x0;
   i32 DeltaY = y1 - y0;
 
@@ -149,7 +150,7 @@ static void DrawLine(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1, u32 Color
   }
 }
 
-static void DrawFilledTriangle(u32 *ColorBuffer,
+internal void DrawFilledTriangle(u32 *ColorBuffer,
                                i32 x0, i32 y0, f32 z0, f32 w0,
                                i32 x1, i32 y1, f32 z1, f32 w1,
                                i32 x2, i32 y2, f32 z2, f32 w2,
@@ -387,18 +388,8 @@ static void DrawRect(u32 *ColorBuffer, u32 x, u32 y, u32 w, u32 h, u32 Color) {
 int main(int argc, char** argv) {
   if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
     fprintf(stderr, "Error initing SDL2\n");
-    return -1;
+    return 1;
   }
-
-#if 0
-  SDL_DisplayMode display_mode;
-  if (SDL_GetCurrentDisplayMode(0, &display_mode) != 0) {
-    fprintf(stderr, "Error getting display\n");
-    return -1;
-  }
-  WIN_WIDTH = display_mode.w;
-  WIN_HEIGHT = display_mode.h;
-#endif
 
   SDL_Window *Window = SDL_CreateWindow("3D Renderer From Scratch",
                                         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
@@ -406,38 +397,39 @@ int main(int argc, char** argv) {
                                         0);
   if (!Window) {
     fprintf(stderr, "Error creating SDL2 window\n");
-    return -1;
+    return 1;
   }
 
   SDL_Renderer *Renderer = SDL_CreateRenderer(Window, -1, 0);
   if (!Renderer) {
     fprintf(stderr, "Error creating SDL2 renderer\n");
-    return -1;
+    return 1;
   }
-  // NOTE: Turning this off due to screen flash switching display mode to full screen everytime
-  // SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
 
   // SETUP
-  u32 *ColorBuff = (u32 *)malloc(sizeof(u32)*WIN_WIDTH*WIN_HEIGHT);
+  ColorBuff = (u32 *)malloc(sizeof(u32)*WIN_WIDTH*WIN_HEIGHT);
   DepthBuff = (f32 *)malloc(sizeof(f32)*WIN_WIDTH*WIN_HEIGHT);
-  if (!ColorBuff) {
+  if (!ColorBuff || !DepthBuff) {
     fprintf(stderr, "Error allocating with malloc\n");
     return -1;
   }
   SDL_Texture *CBTexture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIN_WIDTH, WIN_HEIGHT);
 
-  mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj");
-  upng_t *CubeTexture = LoadPNGTextureFromFile("./assets/cube.png");
+  // TODO: Handle this in the program instead of commenting in/out code
+  //
+  // mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj");
+  // upng_t *CubeTexture = LoadPNGTextureFromFile("./assets/cube.png");
   // mesh SphereMesh = LoadMeshFromObjFile("./assets/sphere.obj");
   // upng_t *SphereTexture = LoadPNGTextureFromFile("./assets/sphere.png");
-  // mesh F22Mesh = LoadMeshFromObjFile("./assets/f22.obj");
-  // upng_t *F22Texture = LoadPNGTextureFromFile("./assets/f22.png");
+  mesh F22Mesh = LoadMeshFromObjFile("./assets/f22.obj");
+  upng_t *F22Texture = LoadPNGTextureFromFile("./assets/f22.png");
   // mesh F117Mesh = LoadMeshFromObjFile("./assets/f117.obj");
   // upng_t *F117Texture = LoadPNGTextureFromFile("./assets/f117.png");
   // mesh CrabMesh = LoadMeshFromObjFile("./assets/crab.obj");
   // upng_t *CrabTexture = LoadPNGTextureFromFile("./assets/crab.png");
   // mesh DroneMesh = LoadMeshFromObjFile("./assets/drone.obj");
   // upng_t *DroneTexture = LoadPNGTextureFromFile("./assets/drone.png");
+
 #define CUBE_VERTICES_COUNT 8
   v3 CubeVertices[CUBE_VERTICES_COUNT] = {
     { -1.0f, -1.0f, -1.0f }, // 1
@@ -472,6 +464,9 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
   { 6, 1, 4, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF }
 };
 
+  // TODO: Update this along side the mesh loading to only do this if
+  // we are using the Cube Mesh
+  //
   // Load cube mesh data
   for (u32 i = 0; i < CUBE_VERTICES_COUNT; ++i) {
     array_push(Mesh.vertices, v3, CubeVertices[i]);
@@ -480,12 +475,12 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     array_push(Mesh.faces, face_index, CubeFaces[i]);
   }
 
-  Mesh.vertices = CubeMesh.vertices;
-  Mesh.faces = CubeMesh.faces;
+  // Mesh.vertices = CubeMesh.vertices;
+  // Mesh.faces = CubeMesh.faces;
   // Mesh.vertices = SphereMesh.vertices;
   // Mesh.faces = SphereMesh.faces;
-  // Mesh.vertices = F22Mesh.vertices;
-  // Mesh.faces = F22Mesh.faces;
+  Mesh.vertices = F22Mesh.vertices;
+  Mesh.faces = F22Mesh.faces;
   // Mesh.vertices = F117Mesh.vertices;
   // Mesh.faces = F117Mesh.faces;
   // Mesh.vertices = CrabMesh.vertices;
@@ -498,6 +493,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     { 0.0f, 0.0f, 1.0f },
     0.0f
   };
+  // NOTE: Look at in course again
   f32 AspectRatioX = (f32)WIN_WIDTH / (f32)WIN_HEIGHT;
   f32 AspectRatioY = (f32)WIN_HEIGHT / (f32)WIN_WIDTH;
   f32 FOVX = PI32 / 2.0f;
@@ -507,6 +503,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
   mat4 ProjectionMatrix = Mat4Projection(AspectRatioY, FOVY, ZNear, ZFar);
   light GLight = { 0.0f, 0.0f, 1.0f };
 
+  // NOTE: Should the position of the points be based on the cam pos?
   plane ViewFrustumPlanes[6] = {
     { {0.0f, 0.0f, 0.0f},  {cosf(FOVX / 2.0f),  0.0f,              sinf(FOVX / 2.0f)} }, // LEFT
     { {0.0f, 0.0f, 0.0f},  {-cosf(FOVX / 2.0f), 0.0f,              sinf(FOVX / 2.0f)} }, // RIGHT
@@ -569,12 +566,11 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
       }
     }
 
-
     // UPDATE
 
     // Mesh.scale.x += 0.002f;
 
-    // Mesh.rotation.x += 0.5f*DeltaTime;
+    Mesh.rotation.x += 0.5f*DeltaTime;
     // Mesh.rotation.y += 5.0f*DeltaTime;
     // Mesh.rotation.z += 5.0f*DeltaTime;
 
@@ -609,7 +605,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
       UVs[2] = Mesh.faces[i].c_uv;
 
       // Transform work
-      for (u32 j = 0; j < arr_count(FaceVerts); ++j) {
+      for (u32 j = 0; j < ArrayCount(FaceVerts); ++j) {
         v4 NewVert = V4FromV3(FaceVerts[j]);
         // ORDER MATTERS!!!!! the below is really S*R*T
         // Builds like XRot*Scale -> YRot*(XRot*Scale) -> ZRot*(YRot*XRot*Scale) -> Translate*(ZRot*YRot*XRot*Scale)
@@ -657,7 +653,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
       for (i32 Index = 0; Index < TrianglesFromPolyCount; ++Index) {
         triangle CurrentTriangle = TrianglesFromCurrPoly[Index];
         // Projection work on each vertex of triangle
-        for (u32 VertexIndex = 0; VertexIndex < arr_count(CurrentTriangle.vertices); ++VertexIndex) {
+        for (u32 VertexIndex = 0; VertexIndex < ArrayCount(CurrentTriangle.vertices); ++VertexIndex) {
           v4 ProjectedPoint = Mat4MultV4(ProjectionMatrix, CurrentTriangle.vertices[VertexIndex]);
           // Perspective divide
           if (ProjectedPoint.w != 0) {

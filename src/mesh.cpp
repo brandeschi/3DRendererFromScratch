@@ -5,8 +5,8 @@
 static mesh LoadMeshFromObjFile(char *FileName) {
   mesh Result = {0};
   FILE *FilePtr;
-  neo_assert(fopen_s(&FilePtr, FileName, "r") == 0);
-  neo_assert(FilePtr != 0);
+  NeoAssert(fopen_s(&FilePtr, FileName, "r") == 0);
+  NeoAssert(FilePtr != 0);
 
   char FileLine[1024];
   while (fgets(FileLine, 1024, FilePtr)) {

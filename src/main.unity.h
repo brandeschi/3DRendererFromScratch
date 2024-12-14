@@ -1,6 +1,6 @@
 #pragma once
 
-// C headers
+// libC + vendor headers
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -32,8 +32,9 @@ typedef double f64;
 
 // Helper Macros
 #define global static
-#define neo_assert(expression) if (!(expression)) { *(int *)0 = 0; }
-#define arr_count(array) (sizeof((array)) / sizeof((array)[0]))
+#define internal static
+#define NeoAssert(expression) if (!(expression)) { *(int *)0 = 0; }
+#define ArrayCount(array) (sizeof((array)) / sizeof((array)[0]))
 #define Swap(T,a,b) do{T temp__ = a; a = b; b = temp__;}while(0)
 
 // Sub TU
