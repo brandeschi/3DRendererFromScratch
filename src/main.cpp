@@ -3,8 +3,9 @@
 internal triangle *Triangles = 0;
 internal mesh Mesh = {0};
 
+// TODO : update build.bat to statically link with SDL2?
+//
 // Per bit option for rendering mode
-// TODO: Make this a composiable system using XOR?
 enum RenderModeEnum {
   WIREFRAME = 1 << 0,
   FILLED = 1 << 1,
@@ -491,6 +492,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
   camera Camera = {
     { 0.0f, 0.0f, 0.0f },
     { 0.0f, 0.0f, 1.0f },
+    0.0f,
     0.0f
   };
   // NOTE: Look at in course again
@@ -551,10 +553,10 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
             BackFaceCull = false;
           }
           if (Event.key.keysym.sym == SDLK_UP) {
-            Camera.position.y += 2.0f*DeltaTime;
+            Camera.pitch += 1.0f*DeltaTime;
           }
           if (Event.key.keysym.sym == SDLK_DOWN) {
-            Camera.position.y -= 2.0f*DeltaTime;
+            Camera.pitch -= 1.0f*DeltaTime;
           }
           if (Event.key.keysym.sym == SDLK_LEFT) {
             Camera.yaw += 1.0f*DeltaTime;
@@ -582,7 +584,10 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
     v3 Target = { 0.0f, 0.0f, 1.0f };
     mat4 CameraYawRot = Mat4RotateY(Camera.yaw);
-    Camera.direction = V3FromV4(Mat4MultV4(CameraYawRot, V4FromV3(Target)));
+    mat4 CameraPitchRot = Mat4RotateX(Camera.pitch);
+    v3 YawDirection = V3FromV4(Mat4MultV4(CameraYawRot, V4FromV3(Target)));
+    v3 PitchDirection = V3FromV4(Mat4MultV4(CameraPitchRot, V4FromV3(Target)));
+    Camera.direction = YawDirection + PitchDirection;
     Target = Camera.position + Camera.direction;
     mat4 ViewMatrix = M4LookAt(Camera.position, Target, { 0.0f, 1.0f, 0.0f });
 

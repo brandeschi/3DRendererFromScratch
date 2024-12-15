@@ -49,6 +49,7 @@ struct camera {
   v3 position;
   v3 direction;
   f32 yaw;
+  f32 pitch;
 };
 struct light {
   v3 direction;
