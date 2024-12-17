@@ -1,6 +1,6 @@
 @echo off
 if not exist .\build (
-    mkdir .\build
+  mkdir .\build
 )
 pushd .\build
 rem -Oi will turn on 'intrinsic optimizations'
@@ -15,4 +15,7 @@ set WarningFlags=-WX -W4 -wd4201 -wd4100 -wd4189 -wd4505 -wd4996
 set SDLInclude=/I ..\vendor\SDL2\include
 set SDLLinker=/LIBPATH:..\vendor\SDL2\lib\x64
 cl -nologo %WarningFlags% %CompilerFlags% %SDLInclude% ..\src\main.cpp /link %SDLLinker% /SUBSYSTEM:CONSOLE shell32.lib SDL2.lib SDL2main.lib
+if not exist .\SDL2.dll (
+  robocopy ..\vendor\SDL2\lib\x64\ . SDL2.dll /njh /njs
+)
 popd

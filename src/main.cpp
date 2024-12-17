@@ -3,8 +3,6 @@
 internal triangle *Triangles = 0;
 internal mesh Mesh = {0};
 
-// TODO : update build.bat to statically link with SDL2?
-//
 // Per bit option for rendering mode
 enum RenderModeEnum {
   WIREFRAME = 1 << 0,
@@ -585,9 +583,7 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
     v3 Target = { 0.0f, 0.0f, 1.0f };
     mat4 CameraYawRot = Mat4RotateY(Camera.yaw);
     mat4 CameraPitchRot = Mat4RotateX(Camera.pitch);
-    v3 YawDirection = V3FromV4(Mat4MultV4(CameraYawRot, V4FromV3(Target)));
-    v3 PitchDirection = V3FromV4(Mat4MultV4(CameraPitchRot, V4FromV3(Target)));
-    Camera.direction = YawDirection + PitchDirection;
+    Camera.direction = V3FromV4(Mat4MultV4(CameraYawRot*CameraPitchRot, V4FromV3(Target)));
     Target = Camera.position + Camera.direction;
     mat4 ViewMatrix = M4LookAt(Camera.position, Target, { 0.0f, 1.0f, 0.0f });
 
