@@ -2,8 +2,8 @@
 #include "main.unity.h"
 #include "mesh.h"
 
-static mesh LoadMeshFromObjFile(char *FileName) {
-  mesh Result = {0};
+// For getting vertices, faces, uvs
+static void LoadMeshDataFromObjFile(mesh *Mesh, const char *FileName) {
   FILE *FilePtr;
   NeoAssert(fopen_s(&FilePtr, FileName, "r") == 0);
   NeoAssert(FilePtr != 0);
@@ -34,9 +34,9 @@ static mesh LoadMeshFromObjFile(char *FileName) {
           }
         }
         if (FileLine[1] == 't') {
-          array_push(Result.uvs, v2, UV);
+          array_push(Mesh->uvs, v2, UV);
         } else {
-          array_push(Result.vertices, v3, Vertex);
+          array_push(Mesh->vertices, v3, Vertex);
         }
       } break;
       case 'f': {
@@ -68,23 +68,33 @@ static mesh LoadMeshFromObjFile(char *FileName) {
           } else if (ValueCount == 2) {
             i32 Index = atoi(FaceIndexStr) - 1;
             if (FaceIndex == 0) {
-              Face.a_uv = Result.uvs[Index];
+              Face.a_uv = Mesh->uvs[Index];
             } else if (FaceIndex == 1) {
-              Face.b_uv = Result.uvs[Index];
+              Face.b_uv = Mesh->uvs[Index];
             } else if (FaceIndex == 2) {
-              Face.c_uv = Result.uvs[Index];
+              Face.c_uv = Mesh->uvs[Index];
             }
           }
           memset(FaceIndexStr, 0, 8);
           FISPtr = &FaceIndexStr[0];
         }
         Face.color = 0xFFFFFFFF;
-        array_push(Result.faces, face_index, Face);
+        array_push(Mesh->faces, face_index, Face);
       } break;
       default: break;
     }
   }
 
   fclose(FilePtr);
+}
+
+
+static mesh CreateMeshFromObjFile(const char *ObjFile, const char *TextureFile, v3 Scale, v3 Rotation, v3 Translation) {
+  mesh Result = {0};
+  LoadMeshDataFromObjFile(&Result, ObjFile);
+  Result.texture = LoadPNGTextureFromFile(TextureFile);
+  Result.scale = Scale;
+  Result.rotation = Rotation;
+  Result.translation = Translation;
   return Result;
 }

@@ -41,8 +41,8 @@ typedef double f64;
 #include "math.cpp"
 #include "array.cpp"
 #include "upng.cpp"
-#include "mesh.cpp"
 #include "texture.cpp"
+#include "mesh.cpp"
 
 // Types
 struct camera {

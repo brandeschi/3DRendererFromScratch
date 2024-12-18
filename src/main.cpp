@@ -1,7 +1,6 @@
 #include "main.unity.h"
 
 internal triangle *Triangles = 0;
-internal mesh Mesh = {0};
 
 // Per bit option for rendering mode
 enum RenderModeEnum {
@@ -416,76 +415,16 @@ int main(int argc, char** argv) {
 
   // TODO: Handle this in the program instead of commenting in/out code
   //
-  // mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj");
-  // upng_t *CubeTexture = LoadPNGTextureFromFile("./assets/cube.png");
-  // mesh SphereMesh = LoadMeshFromObjFile("./assets/sphere.obj");
-  // upng_t *SphereTexture = LoadPNGTextureFromFile("./assets/sphere.png");
-  mesh F22Mesh = LoadMeshFromObjFile("./assets/f22.obj");
-  upng_t *F22Texture = LoadPNGTextureFromFile("./assets/f22.png");
-  // mesh F117Mesh = LoadMeshFromObjFile("./assets/f117.obj");
-  // upng_t *F117Texture = LoadPNGTextureFromFile("./assets/f117.png");
-  // mesh CrabMesh = LoadMeshFromObjFile("./assets/crab.obj");
-  // upng_t *CrabTexture = LoadPNGTextureFromFile("./assets/crab.png");
-  // mesh DroneMesh = LoadMeshFromObjFile("./assets/drone.obj");
-  // upng_t *DroneTexture = LoadPNGTextureFromFile("./assets/drone.png");
-
-#define CUBE_VERTICES_COUNT 8
-  v3 CubeVertices[CUBE_VERTICES_COUNT] = {
-    { -1.0f, -1.0f, -1.0f }, // 1
-    { -1.0f,  1.0f, -1.0f }, // 2
-    {  1.0f,  1.0f, -1.0f }, // 3
-    {  1.0f, -1.0f, -1.0f }, // 4
-    {  1.0f,  1.0f,  1.0f }, // 5
-    {  1.0f, -1.0f,  1.0f }, // 6
-    { -1.0f,  1.0f,  1.0f }, // 7
-    { -1.0f, -1.0f,  1.0f }, // 8
-  };
-
-#define CUBE_FACE_COUNT (6 * 2) // 6 faces; 2 triangles per face
-face_index CubeFaces[CUBE_FACE_COUNT] = {
-  // front
-  { 1, 2, 3, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF },
-  { 1, 3, 4, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF },
-  // right
-  { 4, 3, 5, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF },
-  { 4, 5, 6, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF },
-  // back
-  { 6, 5, 7, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF },
-  { 6, 7, 8, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF },
-  // left
-  { 8, 7, 2, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF },
-  { 8, 2, 1, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF },
-  // top
-  { 2, 7, 5, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF },
-  { 2, 5, 3, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF },
-  // bottom
-  { 6, 8, 1, { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, 0xFFFFFFFF },
-  { 6, 1, 4, { 0.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, 0xFFFFFFFF }
-};
-
-  // TODO: Update this along side the mesh loading to only do this if
-  // we are using the Cube Mesh
-  //
-  // Load cube mesh data
-  for (u32 i = 0; i < CUBE_VERTICES_COUNT; ++i) {
-    array_push(Mesh.vertices, v3, CubeVertices[i]);
-  }
-  for (u32 i = 0; i < CUBE_FACE_COUNT; ++i) {
-    array_push(Mesh.faces, face_index, CubeFaces[i]);
-  }
-
-  // Mesh.vertices = CubeMesh.vertices;
-  // Mesh.faces = CubeMesh.faces;
-  // Mesh.vertices = SphereMesh.vertices;
-  // Mesh.faces = SphereMesh.faces;
-  Mesh.vertices = F22Mesh.vertices;
-  Mesh.faces = F22Mesh.faces;
-  // Mesh.vertices = F117Mesh.vertices;
-  // Mesh.faces = F117Mesh.faces;
-  // Mesh.vertices = CrabMesh.vertices;
-  // Mesh.faces = CrabMesh.faces;
-  // Mesh.vertices = DroneMesh.vertices;
-  // Mesh.faces = DroneMesh.faces;
+  const i32 MAX_MESH_COUNT = 10;
+  mesh Meshes[MAX_MESH_COUNT];
+  ums MeshCount = 0;
+  // mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj", "./assets/cube.png");
+  Meshes[MeshCount++] = CreateMeshFromObjFile("./assets/sphere.obj", "./assets/sphere.png", V3(0.5f, 0.5f, 0.5f), V3(0.0f, 0.0f, 0.0f), V3(-2.0f, 0.0f, 5.0f));
+  // mesh F22Mesh = LoadMeshFromObjFile("./assets/f22.obj", "./assets/f22.png");
+  Meshes[MeshCount++] = CreateMeshFromObjFile("./assets/f22.obj", "./assets/f22.png", V3(1.0f, 1.0f, 1.0f), V3(0.0f, 0.0f, 0.0f), V3(2.0f, 0.0f, 5.0f));
+  // mesh F117Mesh = LoadMeshFromObjFile("./assets/f117.obj", "./assets/f117.png");
+  // mesh CrabMesh = LoadMeshFromObjFile("./assets/crab.obj", "./assets/crab.png");
+  // mesh DroneMesh = LoadMeshFromObjFile("./assets/drone.obj", "./assets/drone.png");
 
   camera Camera = {
     { 0.0f, 0.0f, 0.0f },
@@ -568,114 +507,120 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
 
     // UPDATE
 
-    // Mesh.scale.x += 0.002f;
 
-    Mesh.rotation.x += 0.5f*DeltaTime;
-    // Mesh.rotation.y += 5.0f*DeltaTime;
-    // Mesh.rotation.z += 5.0f*DeltaTime;
-
-    // Mesh.translation.x += 5.0f*DeltaTime;
-    Mesh.translation.z = 5.0f;
-
-    // Camera.position.x += 0.3f*DeltaTime;
-    // Camera.position.y += 0.3f*DeltaTime;
-
-    v3 Target = { 0.0f, 0.0f, 1.0f };
-    mat4 CameraYawRot = Mat4RotateY(Camera.yaw);
-    mat4 CameraPitchRot = Mat4RotateX(Camera.pitch);
-    Camera.direction = V3FromV4(Mat4MultV4(CameraYawRot*CameraPitchRot, V4FromV3(Target)));
-    Target = Camera.position + Camera.direction;
-    mat4 ViewMatrix = M4LookAt(Camera.position, Target, { 0.0f, 1.0f, 0.0f });
-
-    mat4 ScaleMatrix = Mat4Scale(Mesh.scale.x, Mesh.scale.y, Mesh.scale.z);
-    mat4 XRotationMatrix = Mat4RotateX(Mesh.rotation.x);
-    mat4 YRotationMatrix = Mat4RotateY(Mesh.rotation.y);
-    mat4 ZRotationMatrix = Mat4RotateZ(Mesh.rotation.z);
-    mat4 TranslationMatrix = Mat4Translate(Mesh.translation.x, Mesh.translation.y, Mesh.translation.z);
-
+    // Reset Triangles
     Triangles = 0;
-    for (i32 i = 0; i < array_length(Mesh.faces); ++i) {
-      // Collect vertices of triangle for each face
-      v3 FaceVerts[3];
-      FaceVerts[0] = Mesh.vertices[Mesh.faces[i].a - 1];
-      FaceVerts[1] = Mesh.vertices[Mesh.faces[i].b - 1];
-      FaceVerts[2] = Mesh.vertices[Mesh.faces[i].c - 1];
-      v2 UVs[3];
-      UVs[0] = Mesh.faces[i].a_uv;
-      UVs[1] = Mesh.faces[i].b_uv;
-      UVs[2] = Mesh.faces[i].c_uv;
+    for (ums MeshIndex = 0; MeshIndex < MeshCount; ++MeshIndex) {
+      mesh Mesh = Meshes[MeshIndex];
 
-      // Transform work
-      for (u32 j = 0; j < ArrayCount(FaceVerts); ++j) {
-        v4 NewVert = V4FromV3(FaceVerts[j]);
-        // ORDER MATTERS!!!!! the below is really S*R*T
-        // Builds like XRot*Scale -> YRot*(XRot*Scale) -> ZRot*(YRot*XRot*Scale) -> Translate*(ZRot*YRot*XRot*Scale)
-        mat4 WorldMatrix = TranslationMatrix*ZRotationMatrix*YRotationMatrix*XRotationMatrix*ScaleMatrix;
-        NewVert = Mat4MultV4(WorldMatrix, NewVert);
-        NewVert = Mat4MultV4(ViewMatrix, NewVert);
-        FaceVerts[j] = V3FromV4(NewVert);
-      }
+      // Mesh.scale.x += 0.002f;
 
-      v3 FaceVertA = FaceVerts[0];
-      v3 FaceVertB = FaceVerts[1];
-      v3 FaceVertC = FaceVerts[2];
-      v3 VectorBA = FaceVertB - FaceVertA;
-      v3 VectorCA = FaceVertC - FaceVertA;
-      V3Normalize(&VectorBA);
-      V3Normalize(&VectorCA);
-      v3 FaceNormal = CrossProduct(VectorBA, VectorCA);
-      V3Normalize(&FaceNormal);
+      // Mesh.rotation.x += 0.5f*DeltaTime;
+      // Mesh.rotation.y += 5.0f*DeltaTime;
+      // Mesh.rotation.z += 5.0f*DeltaTime;
 
-      // Backface Culling
-      if (BackFaceCull) {
-        v3 CameraRay = V3(0.0f, 0.0f, 0.0f) - FaceVertA;
-        // The DotProduct IS commutative!
-        if (DotProduct(FaceNormal, CameraRay) <= 0) continue; // Skip projecting the vertices of this face as they are not visible
-      }
+      // Mesh.translation.x += 5.0f*DeltaTime;
+      // Mesh.translation.z = 5.0f;
 
-      // Clipping
-      polygon CurrentPolygon = CreatePolyFromTriangle(FaceVerts, UVs);
-      ClipPolygon(&CurrentPolygon, ViewFrustumPlanes);
+      // Camera.position.x += 0.3f*DeltaTime;
+      // Camera.position.y += 0.3f*DeltaTime;
 
-      triangle TrianglesFromCurrPoly[MAX_TRIANGLES_FROM_POLYGON];
-      i32 TrianglesFromPolyCount = CurrentPolygon.number_of_vertices - 2;
-      {
-        for (i32 Index = 0; Index < TrianglesFromPolyCount; ++Index) {
-          TrianglesFromCurrPoly[Index].vertices[0] = V4FromV3(CurrentPolygon.vertices[0]);
-          TrianglesFromCurrPoly[Index].vertices[1] = V4FromV3(CurrentPolygon.vertices[Index + 1]);
-          TrianglesFromCurrPoly[Index].vertices[2] = V4FromV3(CurrentPolygon.vertices[Index + 2]);
-          TrianglesFromCurrPoly[Index].texture_coords[0] = CurrentPolygon.uvs[0];
-          TrianglesFromCurrPoly[Index].texture_coords[1] = CurrentPolygon.uvs[Index + 1];
-          TrianglesFromCurrPoly[Index].texture_coords[2] = CurrentPolygon.uvs[Index + 2];
+      v3 Target = { 0.0f, 0.0f, 1.0f };
+      mat4 CameraYawRot = Mat4RotateY(Camera.yaw);
+      mat4 CameraPitchRot = Mat4RotateX(Camera.pitch);
+      Camera.direction = V3FromV4(Mat4MultV4(CameraYawRot*CameraPitchRot, V4FromV3(Target)));
+      Target = Camera.position + Camera.direction;
+      mat4 ViewMatrix = M4LookAt(Camera.position, Target, { 0.0f, 1.0f, 0.0f });
+
+      mat4 ScaleMatrix = Mat4Scale(Mesh.scale.x, Mesh.scale.y, Mesh.scale.z);
+      mat4 XRotationMatrix = Mat4RotateX(Mesh.rotation.x);
+      mat4 YRotationMatrix = Mat4RotateY(Mesh.rotation.y);
+      mat4 ZRotationMatrix = Mat4RotateZ(Mesh.rotation.z);
+      mat4 TranslationMatrix = Mat4Translate(Mesh.translation.x, Mesh.translation.y, Mesh.translation.z);
+
+      for (i32 i = 0; i < array_length(Mesh.faces); ++i) {
+        // Collect vertices of triangle for each face
+        v3 FaceVerts[3];
+        FaceVerts[0] = Mesh.vertices[Mesh.faces[i].a - 1];
+        FaceVerts[1] = Mesh.vertices[Mesh.faces[i].b - 1];
+        FaceVerts[2] = Mesh.vertices[Mesh.faces[i].c - 1];
+        v2 UVs[3];
+        UVs[0] = Mesh.faces[i].a_uv;
+        UVs[1] = Mesh.faces[i].b_uv;
+        UVs[2] = Mesh.faces[i].c_uv;
+
+        // Transform work
+        for (u32 j = 0; j < ArrayCount(FaceVerts); ++j) {
+          v4 NewVert = V4FromV3(FaceVerts[j]);
+          // ORDER MATTERS!!!!! the below is really S*R*T
+          // Builds like XRot*Scale -> YRot*(XRot*Scale) -> ZRot*(YRot*XRot*Scale) -> Translate*(ZRot*YRot*XRot*Scale)
+          mat4 WorldMatrix = TranslationMatrix*ZRotationMatrix*YRotationMatrix*XRotationMatrix*ScaleMatrix;
+          NewVert = Mat4MultV4(WorldMatrix, NewVert);
+          NewVert = Mat4MultV4(ViewMatrix, NewVert);
+          FaceVerts[j] = V3FromV4(NewVert);
         }
 
-      }
+        v3 FaceVertA = FaceVerts[0];
+        v3 FaceVertB = FaceVerts[1];
+        v3 FaceVertC = FaceVerts[2];
+        v3 VectorBA = FaceVertB - FaceVertA;
+        v3 VectorCA = FaceVertC - FaceVertA;
+        V3Normalize(&VectorBA);
+        V3Normalize(&VectorCA);
+        v3 FaceNormal = CrossProduct(VectorBA, VectorCA);
+        V3Normalize(&FaceNormal);
 
-      for (i32 Index = 0; Index < TrianglesFromPolyCount; ++Index) {
-        triangle CurrentTriangle = TrianglesFromCurrPoly[Index];
-        // Projection work on each vertex of triangle
-        for (u32 VertexIndex = 0; VertexIndex < ArrayCount(CurrentTriangle.vertices); ++VertexIndex) {
-          v4 ProjectedPoint = Mat4MultV4(ProjectionMatrix, CurrentTriangle.vertices[VertexIndex]);
-          // Perspective divide
-          if (ProjectedPoint.w != 0) {
-            ProjectedPoint.x /= ProjectedPoint.w;
-            ProjectedPoint.y /= ProjectedPoint.w;
-            ProjectedPoint.z /= ProjectedPoint.w;
+        // Backface Culling
+        if (BackFaceCull) {
+          v3 CameraRay = V3(0.0f, 0.0f, 0.0f) - FaceVertA;
+          // The DotProduct IS commutative!
+          if (DotProduct(FaceNormal, CameraRay) <= 0) continue; // Skip projecting the vertices of this face as they are not visible
+        }
+
+        // Clipping
+        polygon CurrentPolygon = CreatePolyFromTriangle(FaceVerts, UVs);
+        ClipPolygon(&CurrentPolygon, ViewFrustumPlanes);
+
+        triangle TrianglesFromCurrPoly[MAX_TRIANGLES_FROM_POLYGON];
+        i32 TrianglesFromPolyCount = CurrentPolygon.number_of_vertices - 2;
+        {
+          for (i32 Index = 0; Index < TrianglesFromPolyCount; ++Index) {
+            TrianglesFromCurrPoly[Index].vertices[0] = V4FromV3(CurrentPolygon.vertices[0]);
+            TrianglesFromCurrPoly[Index].vertices[1] = V4FromV3(CurrentPolygon.vertices[Index + 1]);
+            TrianglesFromCurrPoly[Index].vertices[2] = V4FromV3(CurrentPolygon.vertices[Index + 2]);
+            TrianglesFromCurrPoly[Index].texture_coords[0] = CurrentPolygon.uvs[0];
+            TrianglesFromCurrPoly[Index].texture_coords[1] = CurrentPolygon.uvs[Index + 1];
+            TrianglesFromCurrPoly[Index].texture_coords[2] = CurrentPolygon.uvs[Index + 2];
           }
 
-          ProjectedPoint.x *= (f32)(WIN_WIDTH / 2);
-          ProjectedPoint.y *= (f32)(WIN_HEIGHT / 2);
-
-          ProjectedPoint.y *= -1.0f;
-
-          ProjectedPoint.x += (f32)(WIN_WIDTH / 2);
-          ProjectedPoint.y += (f32)(WIN_HEIGHT / 2);
-          CurrentTriangle.vertices[VertexIndex] = ProjectedPoint;
         }
 
-        f32 AlignmentPercentage = -DotProduct(FaceNormal, GLight.direction);
-        CurrentTriangle.color = ColorFromLightIntensity(Mesh.faces[i].color, AlignmentPercentage);
-        array_push(Triangles, triangle, CurrentTriangle);
+        for (i32 Index = 0; Index < TrianglesFromPolyCount; ++Index) {
+          triangle CurrentTriangle = TrianglesFromCurrPoly[Index];
+          // Projection work on each vertex of triangle
+          for (u32 VertexIndex = 0; VertexIndex < ArrayCount(CurrentTriangle.vertices); ++VertexIndex) {
+            v4 ProjectedPoint = Mat4MultV4(ProjectionMatrix, CurrentTriangle.vertices[VertexIndex]);
+            // Perspective divide
+            if (ProjectedPoint.w != 0) {
+              ProjectedPoint.x /= ProjectedPoint.w;
+              ProjectedPoint.y /= ProjectedPoint.w;
+              ProjectedPoint.z /= ProjectedPoint.w;
+            }
+
+            ProjectedPoint.x *= (f32)(WIN_WIDTH / 2);
+            ProjectedPoint.y *= (f32)(WIN_HEIGHT / 2);
+
+            ProjectedPoint.y *= -1.0f;
+
+            ProjectedPoint.x += (f32)(WIN_WIDTH / 2);
+            ProjectedPoint.y += (f32)(WIN_HEIGHT / 2);
+            CurrentTriangle.vertices[VertexIndex] = ProjectedPoint;
+          }
+
+          f32 AlignmentPercentage = -DotProduct(FaceNormal, GLight.direction);
+          CurrentTriangle.color = ColorFromLightIntensity(Mesh.faces[i].color, AlignmentPercentage);
+          array_push(Triangles, triangle, CurrentTriangle);
+        }
       }
     }
 
@@ -712,14 +657,14 @@ face_index CubeFaces[CUBE_FACE_COUNT] = {
       }
     }
     if (RenderMode & TEXTURED) {
-      for (i32 i = 0; i < array_length(Triangles); ++i) {
-        DrawTexturedTriangle(ColorBuff,
-                             (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, Triangles[i].vertices[0].z, Triangles[i].vertices[0].w,
-                             (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, Triangles[i].vertices[1].z, Triangles[i].vertices[1].w,
-                             (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, Triangles[i].vertices[2].z, Triangles[i].vertices[2].w,
-                             MeshTexture,
-                             Triangles[i].texture_coords);
-      }
+      // for (i32 i = 0; i < array_length(Triangles); ++i) {
+      //   DrawTexturedTriangle(ColorBuff,
+      //                        (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, Triangles[i].vertices[0].z, Triangles[i].vertices[0].w,
+      //                        (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, Triangles[i].vertices[1].z, Triangles[i].vertices[1].w,
+      //                        (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, Triangles[i].vertices[2].z, Triangles[i].vertices[2].w,
+      //                        Mesh.texture,
+      //                        Triangles[i].texture_coords);
+      // }
     }
     if (RenderMode & WIREFRAME) {
       for (i32 i = 0; i < array_length(Triangles); ++i) {

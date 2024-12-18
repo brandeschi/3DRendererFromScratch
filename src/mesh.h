@@ -20,10 +20,12 @@ struct mesh {
   v3 *vertices;
   face_index *faces;
   v2 *uvs;
+  u32 *texture;
   v3 scale = { 1.0f, 1.0f, 1.0f };
   v3 rotation;
   v3 translation;
 };
 
-static mesh LoadMeshFromObjFile(char *FileName);
+static void LoadMeshDataFromObjFile(mesh* Mesh, char *FileName);
+static mesh CreateMeshFromObjFile(const char *ObjFile, const char *TextureFile, v3 Scale, v3 Rotation, v3 Translation);
 
