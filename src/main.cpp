@@ -19,8 +19,8 @@ internal u32 RenderMode = WIREFRAME | VERTICES;
 
 internal f32 *DepthBuff = 0;
 internal u32 *ColorBuff = 0;
-global const u32 WIN_WIDTH = 1200;
-global const u32 WIN_HEIGHT = 900;
+global const u32 RENDER_WIDTH = 640;
+global const u32 RENDER_HEIGHT = 360;
 global const f32 FOV_FACTOR = 640.0f;
 
 inline u32 ColorFromLightIntensity(u32 Color, f32 Percentage) {
@@ -138,8 +138,8 @@ internal void DrawLine(u32 *ColorBuffer, i32 x0, i32 y0, i32 x1, i32 y1, u32 Col
   for (i32 i = 0; i <= SideLength; ++i) {
     i32 RoundX = (i32)roundf(CurrentX);
     i32 RoundY = (i32)roundf(CurrentY);
-    if ((RoundX >= 0 && RoundX < WIN_WIDTH) && (RoundY >=0 && RoundY < WIN_HEIGHT)) {
-      ColorBuffer[(WIN_WIDTH*RoundY) + RoundX] = Color;
+    if ((RoundX >= 0 && RoundX < RENDER_WIDTH) && (RoundY >=0 && RoundY < RENDER_HEIGHT)) {
+      ColorBuffer[(RENDER_WIDTH*RoundY) + RoundX] = Color;
     }
     CurrentX += XIncrement;
     CurrentY += YIncrement;
@@ -192,7 +192,7 @@ internal void DrawFilledTriangle(u32 *ColorBuffer,
       }
 
       for (i32 Col = (i32)StartX; Col < (i32)EndX; ++Col) {
-        if ((Col < 0 || Col >= WIN_WIDTH) || (Row < 0 || Row >= WIN_HEIGHT)) {
+        if ((Col < 0 || Col >= RENDER_WIDTH) || (Row < 0 || Row >= RENDER_HEIGHT)) {
           continue;
         }
         v3 Weights = BarycentricWeights(V2(VertexA.x, VertexA.y),
@@ -203,9 +203,9 @@ internal void DrawFilledTriangle(u32 *ColorBuffer,
                                       (1.0f / VertexB.w)*Weights.y +
                                       (1.0f / VertexC.w)*Weights.z;
         InterpolatedReciprocalW = 1.0f - InterpolatedReciprocalW;
-        if (InterpolatedReciprocalW < DepthBuff[(WIN_WIDTH*Row) + Col]) {
-          ColorBuffer[(WIN_WIDTH*Row) + Col] = Color;
-          DepthBuff[(WIN_WIDTH*Row) + Col] = InterpolatedReciprocalW;
+        if (InterpolatedReciprocalW < DepthBuff[(RENDER_WIDTH*Row) + Col]) {
+          ColorBuffer[(RENDER_WIDTH*Row) + Col] = Color;
+          DepthBuff[(RENDER_WIDTH*Row) + Col] = InterpolatedReciprocalW;
         }
       }
     }
@@ -227,7 +227,7 @@ internal void DrawFilledTriangle(u32 *ColorBuffer,
       }
 
       for (i32 Col = (i32)StartX; Col < (i32)EndX; ++Col) {
-        if ((Col < 0 || Col >= WIN_WIDTH) || (Row < 0 || Row >= WIN_HEIGHT)) {
+        if ((Col < 0 || Col >= RENDER_WIDTH) || (Row < 0 || Row >= RENDER_HEIGHT)) {
           continue;
         }
         v3 Weights = BarycentricWeights(V2(VertexA.x, VertexA.y),
@@ -238,9 +238,9 @@ internal void DrawFilledTriangle(u32 *ColorBuffer,
                                       (1.0f / VertexB.w)*Weights.y +
                                       (1.0f / VertexC.w)*Weights.z;
         InterpolatedReciprocalW = 1.0f - InterpolatedReciprocalW;
-        if (InterpolatedReciprocalW < DepthBuff[(WIN_WIDTH*Row) + Col]) {
-          ColorBuffer[(WIN_WIDTH*Row) + Col] = Color;
-          DepthBuff[(WIN_WIDTH*Row) + Col] = InterpolatedReciprocalW;
+        if (InterpolatedReciprocalW < DepthBuff[(RENDER_WIDTH*Row) + Col]) {
+          ColorBuffer[(RENDER_WIDTH*Row) + Col] = Color;
+          DepthBuff[(RENDER_WIDTH*Row) + Col] = InterpolatedReciprocalW;
         }
       }
     }
@@ -272,10 +272,10 @@ static void DrawTexel(u32 *ColorBuffer,
   i32 TextureY = abs((i32)(InterpolatedV*TextureHeight));
 
   InterpolatedReciprocalW = 1.0f - InterpolatedReciprocalW;
-  if (InterpolatedReciprocalW < DepthBuff[(WIN_WIDTH*y) + x]) {
+  if (InterpolatedReciprocalW < DepthBuff[(RENDER_WIDTH*y) + x]) {
     i32 TextureIndex = (((TextureWidth*TextureY) + TextureX) % (TextureWidth*TextureHeight));
-    ColorBuffer[(WIN_WIDTH*y) + x] = Texture[TextureIndex];
-    DepthBuff[(WIN_WIDTH*y) + x] = InterpolatedReciprocalW;
+    ColorBuffer[(RENDER_WIDTH*y) + x] = Texture[TextureIndex];
+    DepthBuff[(RENDER_WIDTH*y) + x] = InterpolatedReciprocalW;
   }
 }
 
@@ -339,7 +339,7 @@ static void DrawTexturedTriangle(u32 *ColorBuffer,
       }
 
       for (i32 Col = (i32)StartX; Col < (i32)EndX; ++Col) {
-        if ((Col >= 0 && Col < WIN_WIDTH) && (Row >= 0 && Row < WIN_HEIGHT)) {
+        if ((Col >= 0 && Col < RENDER_WIDTH) && (Row >= 0 && Row < RENDER_HEIGHT)) {
           DrawTexel(ColorBuffer, Col, Row, VertexA, VertexB, VertexC, texture, uvs);
         }
       }
@@ -362,7 +362,7 @@ static void DrawTexturedTriangle(u32 *ColorBuffer,
       }
 
       for (i32 Col = (i32)StartX; Col < (i32)EndX; ++Col) {
-        if ((Col >= 0 && Col < WIN_WIDTH) && (Row >= 0 && Row < WIN_HEIGHT)) {
+        if ((Col >= 0 && Col < RENDER_WIDTH) && (Row >= 0 && Row < RENDER_HEIGHT)) {
           DrawTexel(ColorBuffer, Col, Row, VertexA, VertexB, VertexC, texture, uvs);
         }
       }
@@ -374,8 +374,8 @@ static void DrawRect(u32 *ColorBuffer, u32 x, u32 y, u32 w, u32 h, u32 Color) {
 
   for (u32 RectRow = y; RectRow < (y + h); ++RectRow) {
     for (u32 RectCol = x; RectCol < (x + w); ++RectCol) {
-      if (RectCol >= 0 && RectCol < WIN_WIDTH && RectRow >=0 && RectRow < WIN_HEIGHT) {
-        ColorBuffer[(RectRow*WIN_WIDTH) + RectCol] = Color;
+      if (RectCol >= 0 && RectCol < RENDER_WIDTH && RectRow >=0 && RectRow < RENDER_HEIGHT) {
+        ColorBuffer[(RectRow*RENDER_WIDTH) + RectCol] = Color;
       }
     }
   }
@@ -387,10 +387,13 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  SDL_DisplayMode DisplayMode;
+  SDL_GetCurrentDisplayMode(0, &DisplayMode);
+
   SDL_Window *Window = SDL_CreateWindow("3D Renderer From Scratch",
                                         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                        WIN_WIDTH, WIN_HEIGHT,
-                                        0);
+                                        DisplayMode.w, DisplayMode.h,
+                                        SDL_WINDOW_BORDERLESS);
   if (!Window) {
     fprintf(stderr, "Error creating SDL2 window\n");
     return 1;
@@ -403,13 +406,13 @@ int main(int argc, char** argv) {
   }
 
   // SETUP
-  ColorBuff = (u32 *)malloc(sizeof(u32)*WIN_WIDTH*WIN_HEIGHT);
-  DepthBuff = (f32 *)malloc(sizeof(f32)*WIN_WIDTH*WIN_HEIGHT);
+  ColorBuff = (u32 *)malloc(sizeof(u32)*RENDER_WIDTH*RENDER_HEIGHT);
+  DepthBuff = (f32 *)malloc(sizeof(f32)*RENDER_WIDTH*RENDER_HEIGHT);
   if (!ColorBuff || !DepthBuff) {
     fprintf(stderr, "Error allocating with malloc\n");
     return -1;
   }
-  SDL_Texture *CBTexture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIN_WIDTH, WIN_HEIGHT);
+  SDL_Texture *CBTexture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, RENDER_WIDTH, RENDER_HEIGHT);
 
   const i32 MAX_MESH_COUNT = 10;
   mesh Meshes[MAX_MESH_COUNT];
@@ -426,8 +429,8 @@ int main(int argc, char** argv) {
     0.0f
   };
   // NOTE: Look at in course again
-  f32 AspectRatioX = (f32)WIN_WIDTH / (f32)WIN_HEIGHT;
-  f32 AspectRatioY = (f32)WIN_HEIGHT / (f32)WIN_WIDTH;
+  f32 AspectRatioX = (f32)RENDER_WIDTH / (f32)RENDER_HEIGHT;
+  f32 AspectRatioY = (f32)RENDER_HEIGHT / (f32)RENDER_WIDTH;
   f32 FOVX = PI32 / 2.0f;
   f32 FOVY = 2*atanf(tanf(FOVX / 2.0f)*AspectRatioY);
   f32 ZNear = 0.1f;
@@ -587,13 +590,13 @@ int main(int argc, char** argv) {
               ProjectedPoint.z /= ProjectedPoint.w;
             }
 
-            ProjectedPoint.x *= (f32)(WIN_WIDTH / 2);
-            ProjectedPoint.y *= (f32)(WIN_HEIGHT / 2);
+            ProjectedPoint.x *= (f32)(RENDER_WIDTH / 2);
+            ProjectedPoint.y *= (f32)(RENDER_HEIGHT / 2);
 
             ProjectedPoint.y *= -1.0f;
 
-            ProjectedPoint.x += (f32)(WIN_WIDTH / 2);
-            ProjectedPoint.y += (f32)(WIN_HEIGHT / 2);
+            ProjectedPoint.x += (f32)(RENDER_WIDTH / 2);
+            ProjectedPoint.y += (f32)(RENDER_HEIGHT / 2);
             CurrentTriangle.vertices[VertexIndex] = ProjectedPoint;
           }
 
@@ -607,21 +610,21 @@ int main(int argc, char** argv) {
     // RENDER
 
     // Clear
-    for (u32 y = 0; y < WIN_HEIGHT; ++y) {
-      for (u32 x = 0; x < WIN_WIDTH; ++x) {
+    for (u32 y = 0; y < RENDER_HEIGHT; ++y) {
+      for (u32 x = 0; x < RENDER_WIDTH; ++x) {
         // Darker Background
-        ColorBuff[(WIN_WIDTH * y) + x] = 0xFF3A4253;
+        ColorBuff[(RENDER_WIDTH * y) + x] = 0xFF3A4253;
         // Start all depths at the zFar
-        DepthBuff[(WIN_WIDTH * y) + x] = 1.0f;
+        DepthBuff[(RENDER_WIDTH * y) + x] = 1.0f;
       }
     }
     // Dot Matrix
-    for (u32 y = 0; y < WIN_HEIGHT; y += 10) {
-      for (u32 x = 0; x < WIN_WIDTH; x += 10) {
+    for (u32 y = 0; y < RENDER_HEIGHT; y += 10) {
+      for (u32 x = 0; x < RENDER_WIDTH; x += 10) {
         if (y == 0 || x == 0) {
           continue;
         }
-          ColorBuff[(WIN_WIDTH * y) + x] = 0xFFA0A8B9;
+          ColorBuff[(RENDER_WIDTH * y) + x] = 0xFFA0A8B9;
       }
     }
 
@@ -670,7 +673,7 @@ int main(int argc, char** argv) {
       array_free(Triangles);
     }
 
-    SDL_UpdateTexture(CBTexture, 0, ColorBuff, (int)(WIN_WIDTH*sizeof(u32)));
+    SDL_UpdateTexture(CBTexture, 0, ColorBuff, (int)(RENDER_WIDTH*sizeof(u32)));
     SDL_RenderCopy(Renderer, CBTexture, 0, 0);
     SDL_RenderPresent(Renderer);
 
