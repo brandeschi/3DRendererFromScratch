@@ -20,6 +20,7 @@ struct mesh {
   v3 *vertices;
   face_index *faces;
   v2 *uvs;
+  triangle *triangles;
   u32 *texture;
   v3 scale = { 1.0f, 1.0f, 1.0f };
   v3 rotation;

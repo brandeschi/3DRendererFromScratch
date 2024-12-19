@@ -1,7 +1,5 @@
 #include "main.unity.h"
 
-internal triangle *Triangles = 0;
-
 // Per bit option for rendering mode
 enum RenderModeEnum {
   WIREFRAME = 1 << 0,
@@ -413,18 +411,13 @@ int main(int argc, char** argv) {
   }
   SDL_Texture *CBTexture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIN_WIDTH, WIN_HEIGHT);
 
-  // TODO: Handle this in the program instead of commenting in/out code
-  //
   const i32 MAX_MESH_COUNT = 10;
   mesh Meshes[MAX_MESH_COUNT];
   ums MeshCount = 0;
-  // mesh CubeMesh = LoadMeshFromObjFile("./assets/cube.obj", "./assets/cube.png");
-  Meshes[MeshCount++] = CreateMeshFromObjFile("./assets/sphere.obj", "./assets/sphere.png", V3(0.5f, 0.5f, 0.5f), V3(0.0f, 0.0f, 0.0f), V3(-2.0f, 0.0f, 5.0f));
-  // mesh F22Mesh = LoadMeshFromObjFile("./assets/f22.obj", "./assets/f22.png");
-  Meshes[MeshCount++] = CreateMeshFromObjFile("./assets/f22.obj", "./assets/f22.png", V3(1.0f, 1.0f, 1.0f), V3(0.0f, 0.0f, 0.0f), V3(2.0f, 0.0f, 5.0f));
-  // mesh F117Mesh = LoadMeshFromObjFile("./assets/f117.obj", "./assets/f117.png");
-  // mesh CrabMesh = LoadMeshFromObjFile("./assets/crab.obj", "./assets/crab.png");
-  // mesh DroneMesh = LoadMeshFromObjFile("./assets/drone.obj", "./assets/drone.png");
+  // Meshes[MeshCount++] = CreateMeshFromObjFile("./assets/f22.obj", "./assets/f22.png", V3(1.0f, 1.0f, 1.0f), V3(0.0f, 0.0f, 0.0f), V3(2.0f, 0.0f, 5.0f));
+  // Meshes[MeshCount++] = CreateMeshFromObjFile("./assets/efa.obj", "./assets/efa.png", V3(1.0f, 1.0f, 1.0f), V3(0.0f, 0.0f, 0.0f), V3(-2.0f, 0.0f, 5.0f));
+  Meshes[MeshCount++] = CreateMeshFromObjFile("./assets/crab.obj", "./assets/crab.png", V3(1.0f, 1.0f, 1.0f), V3(0.0f, 0.0f, 0.0f), V3(2.0f, 0.0f, 5.0f));
+  Meshes[MeshCount++] = CreateMeshFromObjFile("./assets/drone.obj", "./assets/drone.png", V3(1.0f, 1.0f, 1.0f), V3(0.0f, 0.0f, 0.0f), V3(-2.0f, 0.0f, 5.0f));
 
   camera Camera = {
     { 0.0f, 0.0f, 0.0f },
@@ -490,40 +483,27 @@ int main(int argc, char** argv) {
             BackFaceCull = false;
           }
           if (Event.key.keysym.sym == SDLK_UP) {
-            Camera.pitch += 1.0f*DeltaTime;
+            Camera.pitch += 3.0f*DeltaTime;
           }
           if (Event.key.keysym.sym == SDLK_DOWN) {
-            Camera.pitch -= 1.0f*DeltaTime;
+            Camera.pitch -= 3.0f*DeltaTime;
           }
           if (Event.key.keysym.sym == SDLK_LEFT) {
-            Camera.yaw += 1.0f*DeltaTime;
+            Camera.yaw += 3.0f*DeltaTime;
           }
           if (Event.key.keysym.sym == SDLK_RIGHT) {
-            Camera.yaw -= 1.0f*DeltaTime;
+            Camera.yaw -= 3.0f*DeltaTime;
           }
         } break;
       }
     }
 
     // UPDATE
-
-
-    // Reset Triangles
-    Triangles = 0;
     for (ums MeshIndex = 0; MeshIndex < MeshCount; ++MeshIndex) {
-      mesh Mesh = Meshes[MeshIndex];
+      mesh *Mesh = &Meshes[MeshIndex];
 
-      // Mesh.scale.x += 0.002f;
-
-      // Mesh.rotation.x += 0.5f*DeltaTime;
-      // Mesh.rotation.y += 5.0f*DeltaTime;
-      // Mesh.rotation.z += 5.0f*DeltaTime;
-
-      // Mesh.translation.x += 5.0f*DeltaTime;
-      // Mesh.translation.z = 5.0f;
-
-      // Camera.position.x += 0.3f*DeltaTime;
-      // Camera.position.y += 0.3f*DeltaTime;
+      // Reset Triangles
+      Mesh->triangles = 0;
 
       v3 Target = { 0.0f, 0.0f, 1.0f };
       mat4 CameraYawRot = Mat4RotateY(Camera.yaw);
@@ -532,22 +512,22 @@ int main(int argc, char** argv) {
       Target = Camera.position + Camera.direction;
       mat4 ViewMatrix = M4LookAt(Camera.position, Target, { 0.0f, 1.0f, 0.0f });
 
-      mat4 ScaleMatrix = Mat4Scale(Mesh.scale.x, Mesh.scale.y, Mesh.scale.z);
-      mat4 XRotationMatrix = Mat4RotateX(Mesh.rotation.x);
-      mat4 YRotationMatrix = Mat4RotateY(Mesh.rotation.y);
-      mat4 ZRotationMatrix = Mat4RotateZ(Mesh.rotation.z);
-      mat4 TranslationMatrix = Mat4Translate(Mesh.translation.x, Mesh.translation.y, Mesh.translation.z);
+      mat4 ScaleMatrix = Mat4Scale(Mesh->scale.x, Mesh->scale.y, Mesh->scale.z);
+      mat4 XRotationMatrix = Mat4RotateX(Mesh->rotation.x);
+      mat4 YRotationMatrix = Mat4RotateY(Mesh->rotation.y);
+      mat4 ZRotationMatrix = Mat4RotateZ(Mesh->rotation.z);
+      mat4 TranslationMatrix = Mat4Translate(Mesh->translation.x, Mesh->translation.y, Mesh->translation.z);
 
-      for (i32 i = 0; i < array_length(Mesh.faces); ++i) {
+      for (i32 i = 0; i < array_length(Mesh->faces); ++i) {
         // Collect vertices of triangle for each face
         v3 FaceVerts[3];
-        FaceVerts[0] = Mesh.vertices[Mesh.faces[i].a - 1];
-        FaceVerts[1] = Mesh.vertices[Mesh.faces[i].b - 1];
-        FaceVerts[2] = Mesh.vertices[Mesh.faces[i].c - 1];
+        FaceVerts[0] = Mesh->vertices[Mesh->faces[i].a - 1];
+        FaceVerts[1] = Mesh->vertices[Mesh->faces[i].b - 1];
+        FaceVerts[2] = Mesh->vertices[Mesh->faces[i].c - 1];
         v2 UVs[3];
-        UVs[0] = Mesh.faces[i].a_uv;
-        UVs[1] = Mesh.faces[i].b_uv;
-        UVs[2] = Mesh.faces[i].c_uv;
+        UVs[0] = Mesh->faces[i].a_uv;
+        UVs[1] = Mesh->faces[i].b_uv;
+        UVs[2] = Mesh->faces[i].c_uv;
 
         // Transform work
         for (u32 j = 0; j < ArrayCount(FaceVerts); ++j) {
@@ -618,8 +598,8 @@ int main(int argc, char** argv) {
           }
 
           f32 AlignmentPercentage = -DotProduct(FaceNormal, GLight.direction);
-          CurrentTriangle.color = ColorFromLightIntensity(Mesh.faces[i].color, AlignmentPercentage);
-          array_push(Triangles, triangle, CurrentTriangle);
+          CurrentTriangle.color = ColorFromLightIntensity(Mesh->faces[i].color, AlignmentPercentage);
+          array_push(Mesh->triangles, triangle, CurrentTriangle);
         }
       }
     }
@@ -645,49 +625,54 @@ int main(int argc, char** argv) {
       }
     }
 
-    // Triangle vertices for each face of the mesh
-    // At this stage, there are multiple overdraws of the vertices
-    if (RenderMode & FILLED) {
-      for (i32 i = 0; i < array_length(Triangles); ++i) {
-        DrawFilledTriangle(ColorBuff,
-                           (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, Triangles[i].vertices[0].z, Triangles[i].vertices[0].w,
-                           (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, Triangles[i].vertices[1].z, Triangles[i].vertices[1].w,
-                           (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, Triangles[i].vertices[2].z, Triangles[i].vertices[2].w,
-                           Triangles[i].color);
+    for (ums MeshIndex = 0; MeshIndex < MeshCount; ++MeshIndex) {
+      mesh *Mesh = &Meshes[MeshIndex];
+      triangle *Triangles = Mesh->triangles;
+
+      // Triangle vertices for each face of the mesh
+      // At this stage, there are multiple overdraws of the vertices
+      if (RenderMode & FILLED) {
+        for (i32 i = 0; i < array_length(Triangles); ++i) {
+          DrawFilledTriangle(ColorBuff,
+                             (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, Triangles[i].vertices[0].z, Triangles[i].vertices[0].w,
+                             (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, Triangles[i].vertices[1].z, Triangles[i].vertices[1].w,
+                             (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, Triangles[i].vertices[2].z, Triangles[i].vertices[2].w,
+                             Triangles[i].color);
+        }
       }
-    }
-    if (RenderMode & TEXTURED) {
-      // for (i32 i = 0; i < array_length(Triangles); ++i) {
-      //   DrawTexturedTriangle(ColorBuff,
-      //                        (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, Triangles[i].vertices[0].z, Triangles[i].vertices[0].w,
-      //                        (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, Triangles[i].vertices[1].z, Triangles[i].vertices[1].w,
-      //                        (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, Triangles[i].vertices[2].z, Triangles[i].vertices[2].w,
-      //                        Mesh.texture,
-      //                        Triangles[i].texture_coords);
-      // }
-    }
-    if (RenderMode & WIREFRAME) {
-      for (i32 i = 0; i < array_length(Triangles); ++i) {
-        DrawLine(ColorBuff, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, 0xFFFF8800);
-        DrawLine(ColorBuff, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, 0xFFFF8800);
-        DrawLine(ColorBuff, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, 0xFFFF8800);
+      if (RenderMode & TEXTURED) {
+        for (i32 i = 0; i < array_length(Triangles); ++i) {
+          DrawTexturedTriangle(ColorBuff,
+                               (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, Triangles[i].vertices[0].z, Triangles[i].vertices[0].w,
+                               (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, Triangles[i].vertices[1].z, Triangles[i].vertices[1].w,
+                               (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, Triangles[i].vertices[2].z, Triangles[i].vertices[2].w,
+                               Mesh->texture,
+                               Triangles[i].texture_coords);
+        }
       }
-    }
-    if (RenderMode & VERTICES) {
-      i32 RectSideLength = 4;
-      i32 HalfRectSideLength = RectSideLength / 2;
-      for (i32 i = 0; i < array_length(Triangles); ++i) {
-        DrawRect(ColorBuff, (u32)Triangles[i].vertices[0].x - HalfRectSideLength, (i32)Triangles[i].vertices[0].y - HalfRectSideLength, RectSideLength, RectSideLength, 0xFFFFFF00);
-        DrawRect(ColorBuff, (i32)Triangles[i].vertices[1].x - HalfRectSideLength, (i32)Triangles[i].vertices[1].y - HalfRectSideLength, RectSideLength, RectSideLength, 0xFFFFFF00);
-        DrawRect(ColorBuff, (i32)Triangles[i].vertices[2].x - HalfRectSideLength, (i32)Triangles[i].vertices[2].y - HalfRectSideLength, RectSideLength, RectSideLength, 0xFFFFFF00);
+      if (RenderMode & WIREFRAME) {
+        for (i32 i = 0; i < array_length(Triangles); ++i) {
+          DrawLine(ColorBuff, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, 0xFFFF8800);
+          DrawLine(ColorBuff, (i32)Triangles[i].vertices[1].x, (i32)Triangles[i].vertices[1].y, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, 0xFFFF8800);
+          DrawLine(ColorBuff, (i32)Triangles[i].vertices[2].x, (i32)Triangles[i].vertices[2].y, (i32)Triangles[i].vertices[0].x, (i32)Triangles[i].vertices[0].y, 0xFFFF8800);
+        }
       }
+      if (RenderMode & VERTICES) {
+        i32 RectSideLength = 4;
+        i32 HalfRectSideLength = RectSideLength / 2;
+        for (i32 i = 0; i < array_length(Triangles); ++i) {
+          DrawRect(ColorBuff, (u32)Triangles[i].vertices[0].x - HalfRectSideLength, (i32)Triangles[i].vertices[0].y - HalfRectSideLength, RectSideLength, RectSideLength, 0xFFFFFF00);
+          DrawRect(ColorBuff, (i32)Triangles[i].vertices[1].x - HalfRectSideLength, (i32)Triangles[i].vertices[1].y - HalfRectSideLength, RectSideLength, RectSideLength, 0xFFFFFF00);
+          DrawRect(ColorBuff, (i32)Triangles[i].vertices[2].x - HalfRectSideLength, (i32)Triangles[i].vertices[2].y - HalfRectSideLength, RectSideLength, RectSideLength, 0xFFFFFF00);
+        }
+      }
+
+      array_free(Triangles);
     }
 
     SDL_UpdateTexture(CBTexture, 0, ColorBuff, (int)(WIN_WIDTH*sizeof(u32)));
     SDL_RenderCopy(Renderer, CBTexture, 0, 0);
     SDL_RenderPresent(Renderer);
-
-    array_free(Triangles);
 
     SyncTime = TARGET_FRAME_TIME - (SDL_GetTicks() - PrevFrameTime);
     if (SyncTime > 0) {
